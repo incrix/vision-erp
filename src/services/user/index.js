@@ -86,7 +86,7 @@ module.exports = class User {
     });
   }
   async checkOTP({ otp, req }) {
-   
+  
     if (!req.session.numOfattempts) req.session.numOfattempts = 1;
     if (req.session.otp === otp && req.session.numOfattempts < process.env.OTP_ATTEMPT_LIMIT) {
       

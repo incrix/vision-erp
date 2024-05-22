@@ -2,7 +2,7 @@
   "name": "vision-erp",
   "version": "0.0.1",
   "description": "A Enterprise resource planning product from Incrix",
-  "main": "app.js",
+  "main": "./src/app.js",
   "scripts": {
     "dev": "nodemon handler.js | bunyan -o short",
     "start": "node handler.js | bunyan -o short",
