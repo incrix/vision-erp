@@ -77,11 +77,18 @@ module.exports = (config) => {
   };
 
   // router
-  app.get("/api/expire", (req, res) => {
-    if (!req.session.counters) req.session.counters = 1;
+  app.get('/',(req,res) =>{
+    res.send('ok fuck you')
+  })
+  app.get("/expire", (req, res) => {
+    try {
+      if (!req.session.counters) req.session.counters = 1;
     else req.session.counters += 1;
     console.log(req.session.counters);
     res.send("expire");
+    } catch (error) {
+      res.json({error: error})
+    }
   });
   app.use("/api/", sessionExpire, router({ services, passport, log }));
 
