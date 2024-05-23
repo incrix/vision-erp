@@ -31,13 +31,15 @@ module.exports = (config) => {
 
   // middlewere connection
   app.use(
-    cors({
-      origin:
-        process.env.NODE_ENV == "development"
-          ? "http://localhost:3000"
-          : "https://d1dp27wvujqxte.cloudfront.net",
-        credentials: true,
-    })
+    cors(
+    //  {
+      // origin:
+      //   process.env.NODE_ENV == "development"
+      //     ? "http://localhost:3000"
+      //     : "https://d1dp27wvujqxte.cloudfront.net",
+      //   credentials: true,
+    //}
+  )
   );
 
   app.use(compression());
