@@ -13,52 +13,52 @@ const GenerateOtp = require("./utils/otpGenerator.js");
 const router = require("./router/index.js");
 const User = require("./services/user");
 const MailSender = require("./services/email/index.js");
-const {sessionExpire,userIsLogin} = require("./middleware.js")
+const { sessionExpire, userIsLogin } = require("./middleware.js");
 const methodOverride = require("method-override");
 const Product = require("./services/product/index.js");
 const Customer = require("./services/customer/index.js");
 const Vendor = require("./services/vendor/index.js");
-const argv = require('minimist')(process.argv.slice(2));
+const argv = require("minimist")(process.argv.slice(2));
 
 module.exports = (config) => {
-  
-
- const getConnection = connectDB({url:config.databaseURL,poolSize:config.poolSize});
+  const getConnection = connectDB({
+    url: config.databaseURL,
+    poolSize: config.poolSize,
+  })
+    .then((connection) => console.log("data base connect successfully"))
+    .catch((error) => console.console.log(error));
 
   const app = express();
-  const log = config.log()
+  const log = config.log();
 
   // middlewere connection
   app.use(
     cors(
-    //   {
+      {
     //    // origin:"https://d1dp27wvujqxte.cloudfront.net",
     //    // origin:'https://d1ucsdf3cm5a5l.cloudfront.net',
     //   //origin: 'http://erp-client-3.s3-website.ap-south-1.amazonaws.com',
-    //    origin: 'http://localhost:3000', // Replace with your frontend domain
-    //   credentials: true,
-    // }
-    )
+       origin: 'http://localhost:3000', // Replace with your frontend domain
+      credentials: true,
+    }
+  )
   );
-
 
   app.use(compression());
   app.use(express.json());
   app.use(helmet());
 
   app.use(express.urlencoded({ extended: false }));
- 
+
   app.use(methodOverride("_method"));
   passportInitialize(passport);
-  sessionManagement(app,config);
-
+  sessionManagement(app, config);
 
   // passport middleware
   app.use(flash());
   app.use(passport.initialize());
   app.use(passport.session());
-  
-  
+
   const otp = new GenerateOtp(5, true);
   const mailSender = new MailSender({
     host: config.host,
@@ -67,38 +67,35 @@ module.exports = (config) => {
     user: config.user,
     pass: config.pass,
   });
-  const vendor = new Vendor()
+  const vendor = new Vendor();
   const user = new User({ otp, mailSender });
-  const product = new Product()
-  const customer = new Customer()
+  const product = new Product();
+  const customer = new Customer();
   const services = {
     user,
     mailSender,
     product,
     customer,
     vendor,
-    getConnection
+    getConnection,
   };
 
-
   // router
-  app.get('/api/expire', (req,res) => {
-   
-    if(!req.session.counters) req.session.counters = 1
-    else req.session.counters += 1
-console.log(req.session.counters)
-    res.send('expire')
-  })
-  app.use("/api/",sessionExpire,router({ services, passport,log }));
+  app.get("/api/expire", (req, res) => {
+    if (!req.session.counters) req.session.counters = 1;
+    else req.session.counters += 1;
+    console.log(req.session.counters);
+    res.send("expire");
+  });
+  app.use("/api/", sessionExpire, router({ services, passport, log }));
 
-   app.get('/api/user-isLogin',userIsLogin)
+  app.get("/api/user-isLogin", userIsLogin);
 
-   // logout 
-   app.get('/api/logout',(req, res) => {
+  // logout
+  app.get("/api/logout", (req, res) => {
     req.session.destroy();
-    res.json({status:"success",message:'logged out successfully'})
-   })
+    res.json({ status: "success", message: "logged out successfully" });
+  });
   // app.use("/api/",router({ services, passport,log }));
   return app;
 };
-
