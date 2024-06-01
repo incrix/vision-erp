@@ -5,7 +5,7 @@ const User = require("../../models/user");
 const Org = require("../../models/Org");
 module.exports = class Product {
 
-  async createCategory({ req, catName, parentId, imageUrl }) {
+  async createCategory({ req, catName, imageUrl }) {
     try {
       return await Category.findOne({ userId: req.session.userId }).then(
         async (category) => {
@@ -23,8 +23,8 @@ module.exports = class Product {
             catImageUrl:
               imageUrl == undefined || imageUrl == "" ? "" : imageUrl,
             online: imageUrl == undefined || imageUrl == "" ? false : true,
-            parent: parentId == "" ? false : true,
-            parentId: parentId == "" ? undefined : parentId,
+            // parent: parentId == "" ? false : true,
+            // parentId: parentId == "" ? undefined : parentId,
           });
           await category.save();
           return { status: "success", message: "Category added successfully" };

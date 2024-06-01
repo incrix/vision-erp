@@ -1,7 +1,6 @@
 "use strict";
 
 const serverless = require("serverless-http");
-require("dotenv").config();
 const config = require("./src/configs")[process.env.NODE_ENV || "development"];
 const app = require("./src/app")(config);
 

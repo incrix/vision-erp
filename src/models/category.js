@@ -18,12 +18,12 @@ const schema = mongoose.Schema(
                   type:String,
                   required: true
                 },
-                parentId:{
-                    type:String
-                },
-                parent:{
-                    type:Boolean
-                },
+                // parentId:{
+                //     type:String
+                // },
+                // parent:{
+                //     type:Boolean
+                // },
                 online:{
                     type: Boolean,
                     default: false

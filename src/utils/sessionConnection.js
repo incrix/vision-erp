@@ -19,6 +19,7 @@ exports.sessionManagement = async (app, config) => {
       saveUninitialized: false,
       cookie: {
         expires: 2629746000,
+  
       },
       store: store,
     })

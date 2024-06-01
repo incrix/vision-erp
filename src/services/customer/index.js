@@ -3,6 +3,7 @@ module.exports = class Customer{
  async createCustomer({
     req,
     type,
+    orgId,
     name,
     email,
     phone,
@@ -18,6 +19,7 @@ module.exports = class Customer{
             name,
             orgId:req.session.orgId,
             email,
+            orgId,
             phone,
             companyDetails,
             billingAddress,

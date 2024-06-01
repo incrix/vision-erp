@@ -86,7 +86,7 @@ module.exports = class User {
     });
   }
   async checkOTP({ otp, req }) {
-  
+   
     if (!req.session.numOfattempts) req.session.numOfattempts = 1;
     if (req.session.otp === otp && req.session.numOfattempts < process.env.OTP_ATTEMPT_LIMIT) {
       
@@ -153,19 +153,6 @@ module.exports = class User {
     }
   }
 
-  // async getStart({ req }) {
-  //   if (req.session.email && req.session.name && req.session.otp) {
-  //     const newUser = await user({
-  //       email: req.session.email,
-  //       OTP: { code: req.session.otp },
-  //       name: req.session.name,
-  //     });
-  //     if (newUser) {
-  //       await newUser.save();
-  //       return { status: "success", message: "User create successfully" };
-  //     } else return { status: "error", message: "User creation failed" };
-  //   } else return { status: "error", message: "something went wrong" };
-  // }
 
   async getBusinessSave({ 
     req , 
@@ -182,25 +169,28 @@ module.exports = class User {
     avatar,
     gender,
     orgLogo, }) {
+      
     const business = await user.findOne({ _id: req.session.userId });
     if (business) {
       const organization = await Org.findOne({
         userId: business._id,
         name: orgName,
       });
+     
       if (organization)
         return {
           status: "error",
           message: "the organization name already exists",
         };
+       
       return await Org.create({
         userId: business._id,
         name: orgName,
         industry:industryName,
         phone: orgPhone,
         email: orgEmail,
-        GSTPin: req.session.orgGST,
-        addGST: req.session.orgGST == "" ? false : true,
+        GSTPin: orgGST,
+        addGST: orgGST == "" ? false : true,
         billingAddress: {
           lineOne: orgAddress_1,
           lineTwo: orgAddress_2,

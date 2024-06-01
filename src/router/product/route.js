@@ -5,9 +5,9 @@ const validator = require("email-validator");
 module.exports = ({ passport, services, log }) => {
   router.post("/create-category", async (req, res) => {
     try {
-      const { parentId, imageUrl, catName } = req.body;
+      const { imageUrl, catName } = req.body;
       await services.product
-        .createCategory({ req, catName, parentId, imageUrl })
+        .createCategory({ req, catName, imageUrl })
         .then((response) => {
           return res.json(response);
         });

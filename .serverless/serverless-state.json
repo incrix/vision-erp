@@ -1,8 +1,8 @@
 {
   "service": {
-    "service": "erp-server",
+    "service": "VisionERP",
     "serviceObject": {
-      "name": "erp-server"
+      "name": "VisionERP"
     },
     "provider": {
       "name": "aws",
@@ -88,7 +88,7 @@
           "AppLogGroup": {
             "Type": "AWS::Logs::LogGroup",
             "Properties": {
-              "LogGroupName": "/aws/lambda/erp-server-dev-app"
+              "LogGroupName": "/aws/lambda/VisionERP-dev-app"
             }
           },
           "IamRoleLambdaExecution": {
@@ -116,7 +116,7 @@
                     "Fn::Join": [
                       "-",
                       [
-                        "erp-server",
+                        "VisionERP",
                         "dev",
                         "lambda"
                       ]
@@ -134,7 +134,7 @@
                         ],
                         "Resource": [
                           {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/erp-server-dev*:*"
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/VisionERP-dev*:*"
                           }
                         ]
                       },
@@ -145,7 +145,7 @@
                         ],
                         "Resource": [
                           {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/erp-server-dev*:*:*"
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/VisionERP-dev*:*:*"
                           }
                         ]
                       }
@@ -158,7 +158,7 @@
                 "Fn::Join": [
                   "-",
                   [
-                    "erp-server",
+                    "VisionERP",
                     "dev",
                     {
                       "Ref": "AWS::Region"
@@ -176,18 +176,18 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/erp-server/dev/1716478839179-2024-05-23T15:40:39.179Z/erp-server.zip"
+                "S3Key": "serverless/VisionERP/dev/1715962137220-2024-05-17T16:08:57.220Z/VisionERP.zip"
               },
               "Handler": "handler.app",
               "Runtime": "nodejs18.x",
-              "FunctionName": "erp-server-dev-app",
+              "FunctionName": "VisionERP-dev-app",
               "MemorySize": 1024,
               "Timeout": 10,
               "Environment": {
                 "Variables": {
-                  "NODE_ENV": "production",
+                  "NODE_ENV": "development",
                   "MONGODB_DEV_URL": "mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/development?retryWrites=true&w=majority",
-                  "MONGODB_PRO_URL": "mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/development?retryWrites=true&w=majority",
+                  "MONGODB_PRO_URL": "mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/production?retryWrites=true&w=majority",
                   "DEPLOYMENT": "true",
                   "SECRET": "fef74a3e1e80567902b18422c9cc45191f4b6967ac8e8f5fef6e7ac383d89b59023942c7193d1a917d65e57b6e016bac",
                   "HOST": "incrix.com",
@@ -208,37 +208,150 @@
               "AppLogGroup"
             ]
           },
-          "AppLambdaVersionER4sxIzXh44plU7ESZDNmVaIZRYHxei8guRbwi0tWBQ": {
+          "AppLambdaVersionzoL57jJwzTUkaZvwJLeRkNUaWxso3Kn6tzlbb3UPsA": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "AppLambdaFunction"
               },
-              "CodeSha256": "7qw/Ze7OsM4oTNks1adOuaB94p9BNSS2Tg7leDA64eQ="
+              "CodeSha256": "SzySQOL8Oe8EKk0UCiUVf0xADo/5dHZPNCqcUdbLtWw="
             }
           },
-          "HttpApi": {
-            "Type": "AWS::ApiGatewayV2::Api",
+          "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
             "Properties": {
-              "Name": "dev-erp-server",
-              "ProtocolType": "HTTP"
-            }
-          },
-          "HttpApiStage": {
-            "Type": "AWS::ApiGatewayV2::Stage",
-            "Properties": {
-              "ApiId": {
-                "Ref": "HttpApi"
+              "Name": "dev-VisionERP",
+              "EndpointConfiguration": {
+                "Types": [
+                  "EDGE"
+                ]
               },
-              "StageName": "$default",
-              "AutoDeploy": true,
-              "DefaultRouteSettings": {
-                "DetailedMetricsEnabled": false
+              "Policy": ""
+            }
+          },
+          "ApiGatewayResourceProxyVar": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "{proxy+}",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
               }
             }
           },
-          "AppLambdaPermissionHttpApi": {
+          "ApiGatewayMethodProxyVarOptions": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "AuthorizationType": "NONE",
+              "HttpMethod": "OPTIONS",
+              "MethodResponses": [
+                {
+                  "StatusCode": "200",
+                  "ResponseParameters": {
+                    "method.response.header.Access-Control-Allow-Origin": true,
+                    "method.response.header.Access-Control-Allow-Headers": true,
+                    "method.response.header.Access-Control-Allow-Methods": true,
+                    "method.response.header.Access-Control-Allow-Credentials": true
+                  },
+                  "ResponseModels": {}
+                }
+              ],
+              "RequestParameters": {},
+              "Integration": {
+                "Type": "MOCK",
+                "RequestTemplates": {
+                  "application/json": "{statusCode:200}"
+                },
+                "ContentHandling": "CONVERT_TO_TEXT",
+                "IntegrationResponses": [
+                  {
+                    "StatusCode": "200",
+                    "ResponseParameters": {
+                      "method.response.header.Access-Control-Allow-Origin": "'*'",
+                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,DELETE,GET,HEAD,PATCH,POST,PUT'",
+                      "method.response.header.Access-Control-Allow-Credentials": "'true'"
+                    },
+                    "ResponseTemplates": {
+                      "application/json": ""
+                    }
+                  }
+                ]
+              },
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceProxyVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodProxyVarAny": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "ANY",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceProxyVar"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": true,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "AppLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "AppLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayDeployment1715962131523": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "StageName": "dev"
+            },
+            "DependsOn": [
+              "ApiGatewayMethodProxyVarOptions",
+              "ApiGatewayMethodProxyVarAny"
+            ]
+          },
+          "AppLambdaPermissionApiGateway": {
             "Type": "AWS::Lambda::Permission",
             "Properties": {
               "FunctionName": {
@@ -267,69 +380,13 @@
                     },
                     ":",
                     {
-                      "Ref": "HttpApi"
+                      "Ref": "ApiGatewayRestApi"
                     },
-                    "/*"
+                    "/*/*"
                   ]
                 ]
               }
             }
-          },
-          "HttpApiIntegrationApp": {
-            "Type": "AWS::ApiGatewayV2::Integration",
-            "Properties": {
-              "ApiId": {
-                "Ref": "HttpApi"
-              },
-              "IntegrationType": "AWS_PROXY",
-              "IntegrationUri": {
-                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"AppLambdaPermissionHttpApi\"][\"Properties\"][\"FunctionName\"]"
-              },
-              "PayloadFormatVersion": "2.0",
-              "TimeoutInMillis": 30000
-            }
-          },
-          "HttpApiRouteAnyProxyVar": {
-            "Type": "AWS::ApiGatewayV2::Route",
-            "Properties": {
-              "ApiId": {
-                "Ref": "HttpApi"
-              },
-              "RouteKey": "ANY /{proxy+}",
-              "Target": {
-                "Fn::Join": [
-                  "/",
-                  [
-                    "integrations",
-                    {
-                      "Ref": "HttpApiIntegrationApp"
-                    }
-                  ]
-                ]
-              }
-            },
-            "DependsOn": "HttpApiIntegrationApp"
-          },
-          "HttpApiRouteAny": {
-            "Type": "AWS::ApiGatewayV2::Route",
-            "Properties": {
-              "ApiId": {
-                "Ref": "HttpApi"
-              },
-              "RouteKey": "ANY /",
-              "Target": {
-                "Fn::Join": [
-                  "/",
-                  [
-                    "integrations",
-                    {
-                      "Ref": "HttpApiIntegrationApp"
-                    }
-                  ]
-                ]
-              }
-            },
-            "DependsOn": "HttpApiIntegrationApp"
           }
         },
         "Outputs": {
@@ -338,36 +395,27 @@
               "Ref": "ServerlessDeploymentBucket"
             },
             "Export": {
-              "Name": "sls-erp-server-dev-ServerlessDeploymentBucketName"
+              "Name": "sls-VisionERP-dev-ServerlessDeploymentBucketName"
             }
           },
           "AppLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "AppLambdaVersionER4sxIzXh44plU7ESZDNmVaIZRYHxei8guRbwi0tWBQ"
+              "Ref": "AppLambdaVersionzoL57jJwzTUkaZvwJLeRkNUaWxso3Kn6tzlbb3UPsA"
             },
             "Export": {
-              "Name": "sls-erp-server-dev-AppLambdaFunctionQualifiedArn"
+              "Name": "sls-VisionERP-dev-AppLambdaFunctionQualifiedArn"
             }
           },
-          "HttpApiId": {
-            "Description": "Id of the HTTP API",
-            "Value": {
-              "Ref": "HttpApi"
-            },
-            "Export": {
-              "Name": "sls-erp-server-dev-HttpApiId"
-            }
-          },
-          "HttpApiUrl": {
-            "Description": "URL of the HTTP API",
+          "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
             "Value": {
               "Fn::Join": [
                 "",
                 [
                   "https://",
                   {
-                    "Ref": "HttpApi"
+                    "Ref": "ApiGatewayRestApi"
                   },
                   ".execute-api.",
                   {
@@ -376,12 +424,13 @@
                   ".",
                   {
                     "Ref": "AWS::URLSuffix"
-                  }
+                  },
+                  "/dev"
                 ]
               ]
             },
             "Export": {
-              "Name": "sls-erp-server-dev-HttpApiUrl"
+              "Name": "sls-VisionERP-dev-ServiceEndpoint"
             }
           }
         }
@@ -476,20 +525,35 @@
         "handler": "handler.app",
         "events": [
           {
-            "httpApi": "ANY /{proxy+}",
-            "resolvedMethod": "ANY",
-            "resolvedPath": "/{proxy+}"
-          },
-          {
-            "httpApi": "ANY /",
-            "resolvedMethod": "ANY",
-            "resolvedPath": "/"
+            "http": {
+              "path": "{proxy+}",
+              "method": "any",
+              "private": true,
+              "cors": {
+                "origin": "*",
+                "methods": [
+                  "OPTIONS",
+                  "ANY"
+                ],
+                "headers": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "allowCredentials": true
+              },
+              "integration": "AWS_PROXY"
+            }
           }
         ],
         "environment": {
-          "NODE_ENV": "production",
+          "NODE_ENV": "development",
           "MONGODB_DEV_URL": "mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/development?retryWrites=true&w=majority",
-          "MONGODB_PRO_URL": "mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/development?retryWrites=true&w=majority",
+          "MONGODB_PRO_URL": "mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/production?retryWrites=true&w=majority",
           "DEPLOYMENT": "true",
           "SECRET": "fef74a3e1e80567902b18422c9cc45191f4b6967ac8e8f5fef6e7ac383d89b59023942c7193d1a917d65e57b6e016bac",
           "HOST": "incrix.com",
@@ -498,19 +562,19 @@
           "USER": "no-replay@incrix.com",
           "PASSWORD": "crixin14@noreplay"
         },
-        "name": "erp-server-dev-app",
+        "name": "VisionERP-dev-app",
         "package": {},
         "memory": 1024,
         "timeout": 10,
         "runtime": "nodejs18.x",
         "vpc": {},
-        "versionLogicalId": "AppLambdaVersionER4sxIzXh44plU7ESZDNmVaIZRYHxei8guRbwi0tWBQ"
+        "versionLogicalId": "AppLambdaVersionzoL57jJwzTUkaZvwJLeRkNUaWxso3Kn6tzlbb3UPsA"
       }
     },
     "configValidationMode": "warn",
     "serviceFilename": "serverless.yml",
     "initialServerlessConfig": {
-      "service": "erp-server",
+      "service": "VisionERP",
       "frameworkVersion": "3",
       "provider": {
         "$ref": "$[\"service\"][\"provider\"]"
@@ -521,10 +585,10 @@
     },
     "layers": {},
     "isDashboardMonitoringPreconfigured": false,
-    "artifact": "D:\\work\\Git\\vision-erp\\.serverless\\erp-server.zip"
+    "artifact": "D:\\work\\Git\\vision-erp\\.serverless\\VisionERP.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/erp-server/dev/1716478839179-2024-05-23T15:40:39.179Z",
-    "artifact": "erp-server.zip"
+    "artifactDirectoryName": "serverless/VisionERP/dev/1715962137220-2024-05-17T16:08:57.220Z",
+    "artifact": "VisionERP.zip"
   }
 }

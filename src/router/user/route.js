@@ -21,7 +21,8 @@ module.exports = ({ passport, services, log }) => {
 
   router.post("/otp-verify", async (req, res) => {
     try {
-   console.log(req.session);
+     console.log(req.session);
+     console.log(req.path);
       const { otp } = req.body;
     
       if (otp && req.session.type == "userLogin")
@@ -128,7 +129,8 @@ module.exports = ({ passport, services, log }) => {
         gender,
         orgLogo,
       } = req.body;
-      await services.user
+      
+       await services.user
         .getBusinessSave({
           req,
           orgName,
@@ -145,14 +147,14 @@ module.exports = ({ passport, services, log }) => {
           gender,
           orgLogo,
         })
-        .then((result) => {
-          return res.json(result);
-        })
+        .then((result) => res.json(result))
         .catch((error) => {
-          console.log(error);
-          return res.json({ status: "error", message: "something went error" });
+          // console.log(error);
+         return res.json({ status: "error", message: "something went error" });
         });
+      
     } catch (err) {
+  
       return res.send(err);
     }
   });

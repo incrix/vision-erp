@@ -1,5 +1,4 @@
-service: erp-server
-
+service: VisionERP
 frameworkVersion: "3"
 
 provider:
@@ -8,6 +7,7 @@ provider:
   memorySize: 1024
   timeout: 10
   region: ap-south-1
+
 # you can add statements to the Lambda function's IAM Role here
 #  iam:
 #    role:
@@ -42,13 +42,27 @@ functions:
   app:
     handler: handler.app
     events:
-     - httpApi: ANY /{proxy+}
-     - httpApi: ANY /
-
+      # - http:
+      #     path: /{proxy+}
+      #     method: any
+      #     private: true
+      #     cors:
+      #       origin: "*"
+      #       headers:
+      #         - Content-Type
+      #         - X-Amz-Date
+      #         - Authorization
+      #         - X-Api-Key
+      #         - X-Amz-Security-Token
+      #         - X-Amz-User-Agent
+      #         - X-Amzn-Trace-Id
+      #       allowCredentials: true
+      - httpApi: ANY /{proxy+}
+      - httpApi: ANY /
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       MONGODB_DEV_URL: mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/development?retryWrites=true&w=majority
-      MONGODB_PRO_URL: mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/development?retryWrites=true&w=majority
+      MONGODB_PRO_URL: mongodb+srv://avinash97official:Crixin14db@cluster0.nqt2tsq.mongodb.net/production?retryWrites=true&w=majority
       DEPLOYMENT: true
       SECRET: fef74a3e1e80567902b18422c9cc45191f4b6967ac8e8f5fef6e7ac383d89b59023942c7193d1a917d65e57b6e016bac
       HOST: incrix.com

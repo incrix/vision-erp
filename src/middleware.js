@@ -26,15 +26,15 @@ exports.sessionExpire = (req, res, next) => {
    req.session.destroy();
    return res.json({satus:'expire',message:'your session is expired',})
   }
-  next();
+ return next();
  }
  else if(!req.session.expire && req.session.isLogin){
   date.setMonth(date.getMonth() + 1)
   const now = moment(date);
   req.session.expire = now.unix();
-  next();
+  return next();
  }
- next();
+ return next();
 };
 
 exports.userIsLogin = (req,res) =>{
