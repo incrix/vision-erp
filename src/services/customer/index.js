@@ -1,42 +1,49 @@
-const customer = require('../../models/customer')
-module.exports = class Customer{
- async createCustomer({
+const customer = require("../../models/customer");
+module.exports = class Customer {
+  async createCustomer({
     req,
     type,
-    orgId,
     name,
     email,
     phone,
     companyDetails,
     billingAddress,
     shippingAddress,
-    balance
- }){
-     try {
-        
-       return await customer.create({
-            type,
-            name,
-            orgId:req.session.orgId,
-            email,
-            orgId,
-            phone,
-            companyDetails,
-            billingAddress,
-            shippingAddress,
-            balance
+    balance,
+  }) {
+    console.log(req.session);
+    try {
+      return await customer
+        .create({
+          type,
+          name,
+          orgId:req.session.orgId,
+          email,
+          phone,
+          companyDetails,
+          billingAddress,
+          shippingAddress,
+          balance,
         })
-        .then(async customerResponse => {
-        
-            return {status:"success",message:"customer created successfully"}
- 
+        .then(async (customerResponse) => {
+            console.log(customerResponse);
+          return {
+            status: "success",
+            message: "customer created successfully",
+          };
         })
-        .catch(error => {
-            console.log(error);
-            return {status:"error",message:"can't create customer"}
-        })
-     } catch (error) {
-        return {status:"error",message:"something went wrong"}
-     }
+        .catch((error) => {
+          console.log(error);
+          return { status: "error", message: "can't create customer" };
+        });
+    } catch (error) {
+      return { status: "error", message: "something went wrong" };
+    }
   }
-}
+  getAllCustomer({ req, callBack }) {
+    return customer
+      .find({ orgId: req.session.orgId})
+      .then((response) => callBack(response, false))
+      .catch((error) => callBack(null,{status:"error",message:"couldn't find any customer"}));
+  }
+};

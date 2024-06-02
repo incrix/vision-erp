@@ -11,7 +11,6 @@ module.exports = ({ passport, services, log }) => {
   //       console.log(err);
   //       res.json({ status: "error", message: "something went wrong" });
   //     });
-
   await services.invoice
       .createInvoice({body:req.body,req,callBack:function(err,data){ 
         if(err) return res.send(err);       
@@ -23,6 +22,17 @@ module.exports = ({ passport, services, log }) => {
       res.json({ status: "error", message:"something went wrong"})
     }
     });
+
+    router.get("/get-all-invoice", async (req, res) => {
+      try {
+        await services.customer.getAllInvoice({req,callBack:function(err,data){ 
+         if(err) return res.send(err);       
+         res.json(data);
+     }})
+     } catch (error) {
+      res.json({status: 'error', error: error});
+    } 
+    })
 
 
   return router;

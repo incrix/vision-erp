@@ -1,9 +1,14 @@
 const mongoose = require("mongoose");
 
 const schema = mongoose.Schema({
+ 
   orgId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Org",
+    required: true,
+  },
+  invoiceId:{
+    type:String,
     required: true,
   },
   userId: {
@@ -165,6 +170,7 @@ const schema = mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+}
+);
 
 module.exports = mongoose.model("Invoice", schema);
