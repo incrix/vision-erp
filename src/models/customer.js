@@ -13,6 +13,9 @@ const schema = mongoose.Schema(
     email: {
       type: String,
     },
+    phone:{
+      type: Number,
+    },
     companyNama: {
       type: String,
     },

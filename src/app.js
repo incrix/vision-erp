@@ -18,9 +18,10 @@ const methodOverride = require("method-override");
 const Product = require("./services/product/index.js");
 const Customer = require("./services/customer/index.js");
 const Vendor = require("./services/vendor/index.js");
-const argv = require("minimist")(process.argv.slice(2));
+const Invoice = require("./services/invoice/index.js");
 
 module.exports = (config) => {
+  
   const getConnection = connectDB({
     url: config.databaseURL,
     poolSize: config.poolSize,
@@ -43,7 +44,6 @@ module.exports = (config) => {
     }
   )
   );
-
   app.use(compression());
   app.use(express.json());
   app.use(helmet());
@@ -71,6 +71,7 @@ module.exports = (config) => {
   const user = new User({ otp, mailSender });
   const product = new Product();
   const customer = new Customer();
+  const invoice = new Invoice();
   const services = {
     user,
     mailSender,
@@ -78,6 +79,7 @@ module.exports = (config) => {
     customer,
     vendor,
     getConnection,
+    invoice
   };
 
   // router
@@ -97,5 +99,11 @@ module.exports = (config) => {
     res.json({ status: "success", message: "logged out successfully" });
   });
   // app.use("/api/",router({ services, passport,log }));
+
+
+
+
   return app;
-};
+}
+
+

@@ -22,6 +22,7 @@ module.exports = class User {
         req.session.type = "userLogin"
         req.session.email = email
         req.session.userId = getUser._id
+        
         return await this.sendOtp(email, otp)
           .then(async (response) => {
             getUser.OTP.code = otp;
@@ -93,6 +94,7 @@ module.exports = class User {
        const getUser = await user.findOne({_id:req.session.userId})
        req.session.isLogin = true
        req.session.fill_the_details = getUser.orgList.length > 0
+       req.session.orgId = getUser.orgList[0].orgID
       return { status: "success", fill_the_details:getUser.orgList.length > 0,message: "OTP verified successfully" };
     } else if (req.session.numOfattempts > process.env.OTP_ATTEMPT_LIMIT) {
    
@@ -214,6 +216,7 @@ module.exports = class User {
               const notification = await Notification({ userId: userResult._id,orgID: orgResult._id});
               await notification.save();
               req.session.isLogin = true
+              req.session.orgId = orgResult._id
               req.session.fill_the_details = true
               return {
                 status: "success",

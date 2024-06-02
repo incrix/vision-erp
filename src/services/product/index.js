@@ -77,7 +77,8 @@ module.exports = class Product {
     eProductImg,
     eProductVideo,
     eSellingPrice,
-    eDiscountPrice
+    eDiscountPrice,
+    eDiscount
   }) {
     try {
      
@@ -90,7 +91,7 @@ module.exports = class Product {
         userId: req.session.userId,
         _id: req.session.orgId,
       });
-   
+  
       const user = await User.findOne({ _id: req.session.userId });
       if (!user) return { status: "error", message: "user are not authorized" };
       if (!org) return { status: "error", message: "are not authorized" };

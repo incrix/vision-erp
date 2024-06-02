@@ -16,6 +16,11 @@ const schema = mongoose.Schema({
       type: String,
       required: true,
     },
+    cusID: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true,
+    },
     phone: {
       type: Number,
       required: true,
@@ -24,26 +29,39 @@ const schema = mongoose.Schema({
       type: String,
       required: true,
     },
-    address: {
-      type: String,
-      required: true,
+    billingAddress: {
+      address1: {
+        type: String,
+      },
+      address2: {
+        type: String,
+      },
+      city: {
+        type: String,
+      },
+      state: {
+        type: String,
+      },
+      zipCode: {
+        type: String,
+      },
+    },
+    companyDetails: {
+      companyName: {
+        type: String,
+      },
+      GSTIN: {
+        type: Number,
+        maxLength: 15,
+        minLength: 15,
+      },
     },
   },
-  companyDetails: {
-    companyName: {
+
+  transationDetails: {
+    mode: {
       type: String,
-   
-    },
-    GSTIN: {
-      type: Number,
-      maxLength:15,
-      minLength:15,
-    },
-  },
-  billingDetails: {
-    payMode: {
-      type: String,
-      enum: ["card", "cash", "upi", "credit"],
+      enum: ["debit", "cash", "upi", "credit"],
     },
   },
   items: [
@@ -51,6 +69,9 @@ const schema = mongoose.Schema({
       name: {
         type: String,
         required: true,
+      },
+      productId: {
+        type: String,
       },
       price: {
         type: Number,
@@ -64,27 +85,62 @@ const schema = mongoose.Schema({
         type: Number,
         required: true,
       },
+      discount: {
+        type: {
+          type: String,
+          enum: ["₹", "%"],
+        },
+        value: {
+          type: Number,
+        },
+        amount: {
+          type: Number,
+        },
+      },
     },
   ],
   additionalCharges: {
-    pakage: {
-      type: Number,
+    package: {
+      type: {
+        type: String,
+      },
+      value: {
+        type: Number,
+      },
+      amount: {
+        type: Number,
+      },
     },
     delivery: {
-      type: Number,
+      type: {
+        type: String,
+      },
+      value: {
+        type: Number,
+      },
+      amount: {
+        type: Number,
+      },
     },
   },
   totalPrice: {
     type: Number,
     required: true,
   },
+  paidAmount: {
+    type: Number,
+    required: true,
+  },
   discount: {
     type: {
       type: String,
-      enum: ["amount", "persentage"],
+      enum: ["₹", "%"],
     },
     value: {
       type: Number,
+    },
+    amount: {
+      // type: Number,
     },
   },
   tax: {
@@ -92,11 +148,23 @@ const schema = mongoose.Schema({
   },
   status: {
     type: String,
-    required: true,
+    // required: true,
     enum: ["pending", "completed", "cancelled", "partial"],
+  },
+
+  date: {
+    type: String,
+  },
+  time: {
+    type: String,
+  },
+  dateMilliseconds: {
+    type: Number,
   },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
+
+module.exports = mongoose.model("Invoice", schema);
