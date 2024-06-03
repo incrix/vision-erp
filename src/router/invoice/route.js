@@ -25,8 +25,8 @@ module.exports = ({ passport, services, log }) => {
 
     router.get("/get-all-invoice", async (req, res) => {
       try {
-        await services.customer.getAllInvoice({req,callBack:function(err,data){ 
-         if(err) return res.send(err);       
+        await services.invoice.getAllInvoice({req,callBack:function(err,data){ 
+         if(err) return res.json(err);       
          res.json(data);
      }})
      } catch (error) {
@@ -34,6 +34,27 @@ module.exports = ({ passport, services, log }) => {
     } 
     })
 
+    router.post("/cancel-invoice", async (req, res) => {
+      try {
+        await services.invoice.cancelInvoice({invoiceId:req.body.invoiceId,req,callBack:function(err,data){ 
+         if(err) return res.json(err);       
+         res.json(data);
+     }})
+     } catch (error) {
+      res.json({status: 'error', error: error});
+    } 
+    })
+
+    router.post("/delete-invoice", async (req, res) => {
+      try {
+        await services.invoice.deleteInvoice({invoiceId:req.body.invoiceId,req,callBack:function(err,data){ 
+         if(err) return res.json(err);       
+         res.json(data);
+     }})
+     } catch (error) {
+      res.json({status: 'error', error: error});
+    } 
+    })
 
   return router;
 };

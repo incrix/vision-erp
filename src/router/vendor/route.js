@@ -17,6 +17,13 @@ module.exports = ({ passport, services, log }) => {
     }
     });
 
+    router.get('/get-all-vendor',(req, res) =>{
+      services.vendor.getAllVendor({req,callback:function(err,data){ 
+        if(err) return res.json(err);       
+        res.json(data);
+    }})
+    })
+
 
   return router;
 };

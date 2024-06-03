@@ -8,15 +8,13 @@ const schema = mongoose.Schema(
     email: {
       type: String,
     },
-    companyNama: {
-      type: String,
-    },
+
     orgId:{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Org"
     },
     companyDetails: {
-      companyNama: {
+      companyName: {
         type: String,
       },
       GSTPin: {
@@ -26,7 +24,10 @@ const schema = mongoose.Schema(
       },
     },
     billingAddress: {
-      address: {
+      address1: {
+        type: String,
+      },
+      address2: {
         type: String,
       },
       city: {
@@ -41,7 +42,10 @@ const schema = mongoose.Schema(
     },
     shippingAddress: [
       {
-        address: {
+        address1: {
+          type: String,
+        },
+        address2: {
           type: String,
         },
         city: {
@@ -53,6 +57,7 @@ const schema = mongoose.Schema(
         zipCode: {
           type: String,
         },
+        _id:false,
       },
     ],
     balance: {

@@ -312,7 +312,6 @@ module.exports = class Invoice {
       await getDateCreated();
    return new Promise(async (resolve, reject) => {
       (async () => {
-      
         const invoicecount = await invoice.find({orgId:req.session.orgId})
         const invoiceId = await genereateInvoiceId(invoicecount);
         const getCustomer = await Customer.findOne({ _id: cusID });
@@ -420,5 +419,47 @@ module.exports = class Invoice {
       })();
     });
   }  
+ 
+  async getAllInvoice({req,callBack}){
+      try {
+        const getInvoice = await invoice.find({orgId:req.session.orgId})
+        if(!getInvoice) callBack(null,{status:"error",message:'something went wrong with organization Id'})
+          callBack(getInvoice)
+      } catch (error) {
+        callBack(error)
+      }
+     
+  }
+  async cancelInvoice({req,callBack,invoiceId}){
+    try {
+      const getInvoice = await invoice.findOne({orgId:req.session.orgId,invoiceId})
+      if(!getInvoice) callBack(null,{status:"error",message:'something went wrong with organization Id'})
+         getInvoice.status = "cancelled"
+         await getInvoice.save()
+        callBack({status:"status",message:'invoice cancelled successfully'},false)
+    } catch (error) {
+      callBack(error)
+    }
+}
+async cancelInvoice({req,callBack,invoiceId}){
+  try {
+    const getInvoice = await invoice.findOne({orgId:req.session.orgId,invoiceId})
+    if(!getInvoice) callBack(null,{status:"error",message:'something went wrong with organization Id'})
+       getInvoice.status = "cancelled"
+       await getInvoice.save()
+      callBack({status:"status",message:'invoice cancelled successfully'},false)
+  } catch (error) {
+    callBack(error)
+  }
+}
+async deleteInvoice({req,callBack,invoiceId}){
+  try {
+    const getInvoice = await invoice.deleteOne({orgId:req.session.orgId,invoiceId})
+    if(!getInvoice) callBack(null,{status:"error",message:'something went wrong with organization Id'})
+      callBack({status:"status",message:'invoice delete successfully'},false)
+  } catch (error) {
+    callBack(error)
+  }
+}
 };
 

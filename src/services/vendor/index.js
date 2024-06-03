@@ -28,5 +28,28 @@ module.exports = class Vendor {
         return { status: "error", message: "can't create vendor" };
       });
   }
-  
+
+  async getAllVendor({ req, callback }) {
+    return await vendor
+      .find({ orgId: req.session.orgId })
+      .then((vendorResponse) => {
+        if (vendorResponse === null)
+          return callback(null, {
+            status: "error",
+            message: "vendor not found",
+          });
+        callback(
+          {
+            status: "success",
+            message: "get vendor successfully",
+            data: vendorResponse,
+          },
+          false
+        );
+      })
+      .catch((error) => {
+        callback(null, error);
+        return { status: "error", message: "get vendor failed" };
+      });
+  }
 };

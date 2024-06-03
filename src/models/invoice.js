@@ -145,7 +145,7 @@ const schema = mongoose.Schema({
       type: Number,
     },
     amount: {
-      // type: Number,
+       type: Number,
     },
   },
   tax: {

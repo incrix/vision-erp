@@ -16,9 +16,6 @@ const schema = mongoose.Schema(
     phone:{
       type: Number,
     },
-    companyNama: {
-      type: String,
-    },
     type: {
       type: String,
       enum: {
@@ -26,7 +23,7 @@ const schema = mongoose.Schema(
       },
     },
     companyDetails: {
-      companyNama: {
+      companyName: {
         type: String,
       },
       GSTPin: {
@@ -54,6 +51,7 @@ const schema = mongoose.Schema(
     },
     shippingAddress: [
       {
+        _id:false,
         address1: {
           type: String,
         },
@@ -69,6 +67,7 @@ const schema = mongoose.Schema(
         zipCode: {
           type: String,
         },
+
       },
     ],
     balance: {

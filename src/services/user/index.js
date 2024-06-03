@@ -211,7 +211,7 @@ module.exports = class User {
               userResult.gender = gender;
               userResult.orgList.push({ orgID: orgResult._id });
               await userResult.save();
-              const getCatogory = await Category({ userId: userResult._id })
+              const getCatogory = await Category({ userId: userResult._id,orgId:orgResult._id})
               await getCatogory.save();
               const notification = await Notification({ userId: userResult._id,orgID: orgResult._id});
               await notification.save();

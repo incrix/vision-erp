@@ -33,9 +33,9 @@ module.exports = ({ passport, services, log }) => {
 
   router.post("/create-product", async (req, res) => {
     try {
-        req.body.req = req
+       
       await services.product
-        .createProduct( req.body )
+        .createProduct( {body:req.body,req} )
         .then((createProductResponse) => res.json(createProductResponse))
         .catch((error) => {
             console.log(error);

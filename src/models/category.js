@@ -7,6 +7,11 @@ const schema = mongoose.Schema(
             ref: 'User',
             required: true
         },
+        orgId:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Org',
+            required: true
+        },
         catList:[
             {
                 _id : false,
@@ -18,12 +23,6 @@ const schema = mongoose.Schema(
                   type:String,
                   required: true
                 },
-                // parentId:{
-                //     type:String
-                // },
-                // parent:{
-                //     type:Boolean
-                // },
                 online:{
                     type: Boolean,
                     default: false

@@ -11,7 +11,7 @@ module.exports = class Customer {
     shippingAddress,
     balance,
   }) {
-    console.log(req.session);
+  
     try {
       return await customer
         .create({
