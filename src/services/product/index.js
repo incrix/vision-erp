@@ -3,7 +3,7 @@ const {
   generateCategoryID,
   generateProductID,
 } = require("../../utils/generateID");
-const { getDateCreated } = require("./productUtil");
+const { getDateCreated,} = require('../../utils/createDate')
 const product = require("../../models/product");
 const User = require("../../models/user");
 const Org = require("../../models/Org");

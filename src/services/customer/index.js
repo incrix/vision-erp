@@ -1,7 +1,9 @@
 const customer = require("../../models/customer");
+const { getDateCreated,} = require('../../utils/createDate')
 module.exports = class Customer {
   async createCustomer({
     req,
+    services,
     type,
     name,
     email,
@@ -13,10 +15,16 @@ module.exports = class Customer {
   }) {
   
     try {
+      const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
       return await customer
         .create({
           type,
           name,
+          timestamps:{
+            date: getDate,
+            time: getTime,
+            dateMilliseconds: getDateMilliseconds
+          },
           orgId:req.session.orgId,
           email,
           phone,
@@ -26,11 +34,36 @@ module.exports = class Customer {
           balance,
         })
         .then(async (customerResponse) => {
-            console.log(customerResponse);
-          return {
-            status: "success",
-            message: "customer created successfully",
-          };
+
+            if(customerResponse.balance.value > 0) 
+           return await services.payment
+            .createPayment({
+              orgId:req.session.orgId,
+              clientId:customerResponse._id,
+              name:customerResponse.name,
+              amount:customerResponse.balance.value,
+              mode:"cash",
+              timestamps:{
+                date: getDate,
+                time: getTime,
+                dateMilliseconds: getDateMilliseconds
+              },
+              type: balance.type,
+            })
+            .then((getPayResult) => {
+              if(getPayResult.status == "error") return getPayResult
+              return {
+                status: "success",
+                message: "customer created successfully",
+              };
+            }) .catch((error) => {
+              console.log(error);
+              return { status: "error", message: "can't create payment" };
+            });
+            return {
+              status: "success",
+              message: "customer created successfully",
+            };
         })
         .catch((error) => {
           console.log(error);

@@ -3,7 +3,7 @@ module.exports = ({ passport, services, log }) => {
   router.post("/create-vendor", async (req, res) => {
   try {
    await services.vendor
-      .createVendor(req.body,req)
+      .createVendor({...req.body,req,services})
       .then((responseVendor) => {
         return res.json(responseVendor);
       })

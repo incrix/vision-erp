@@ -70,15 +70,28 @@ const schema = mongoose.Schema(
 
       },
     ],
-    balance: {
-      openingBalance: {
-        type: Number,
+    timestamps: {
+      date: {
+        type: String,
       },
-      currentBalance: {
+      time: {
+        type: String,
+      },
+      dateMilliseconds: {
         type: Number,
-        default: 0,
       },
     },
+    balance:{
+      type:{
+        type:String,
+        enum:["in","out"],
+        default:"in",
+      },
+      value:{
+        type:Number,
+        default:0
+      }
+  }
   },
   { timestamps: true, versionKey: false }
 );
