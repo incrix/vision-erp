@@ -21,6 +21,7 @@ const Vendor = require("./services/vendor/index.js");
 const Invoice = require("./services/invoice/index.js");
 const Payment = require("./services/payment/index.js");
 
+
 module.exports = (config) => {
   
   const getConnection = connectDB({

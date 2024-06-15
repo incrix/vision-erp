@@ -23,7 +23,7 @@ const schema = mongoose.Schema(
       type: String,
       required: true,
     },
-    GSTPin: {
+    GSTIN: {
       type: String,
       
     },

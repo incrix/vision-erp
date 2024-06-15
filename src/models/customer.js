@@ -26,7 +26,7 @@ const schema = mongoose.Schema(
       companyName: {
         type: String,
       },
-      GSTPin: {
+      GSTIN: {
         type: String,
         max: 15,
         min: 15,

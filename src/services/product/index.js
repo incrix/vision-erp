@@ -62,12 +62,12 @@ module.exports = class Product {
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
       const productId = await generateProductID();
      
-      // add discount information
-      body.eCommerceDetails.eDiscount.amount =
-        body.eCommerceDetails.eDiscount.type == "%"
-          ? body.eCommerceDetails.eSellingPrice *
-            (body.eCommerceDetails.eDiscount.value / 100)
-          : body.eCommerceDetails.value;
+      // // add discount information
+      // body.eCommerceDetails.eDiscount.amount =
+      //   body.eCommerceDetails.eDiscount.type == "%"
+      //     ? body.eCommerceDetails.eSellingPrice *
+      //       (body.eCommerceDetails.eDiscount.value / 100)
+      //     : body.eCommerceDetails.value;
       const getproduct = await product.findOne({
         userId: req.session.userId,
         type: body.type,
@@ -97,8 +97,18 @@ module.exports = class Product {
           date: getDate,
           time: getTime,
           dateMilliseconds: getDateMilliseconds,
-          erpDetails: body.erpDetails,
-          eCommerceDetails: body.eCommerceDetails,
+          unitPrice:body.unitPrice,
+          priceWithTax: body.unitPrice + (body.unitPrice * body.taxRate) /100,
+          purchasePrice: body.purchasePrice,
+          tax: {
+            rate: body.taxRate,
+            value: (body.unitPrice * body.taxRate) /100,
+          },
+          stockQty: body.stockQty,
+          isSales: body.isSales,
+          unit: body.unit,
+          description:body.description,
+          discount:body.discount
         })
         .then(async (createProductResponse) => {
           return { status: "success", message: "Product added successfully" };

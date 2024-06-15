@@ -7,7 +7,7 @@ exports.getDateCreated =() => {
     const getTime = getFormat.split(",")[1].trim();
 
     return {
-      getDate,
+      getDate:`${getDate.split("/")[1]}/${getDate.split("/")[0]}/${getDate.split("/")[2]}`,
       getTime,
       getDateMilliseconds: currentUTCMilliseconds + 19800000,
     };

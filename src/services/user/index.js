@@ -191,7 +191,7 @@ module.exports = class User {
         industry:industryName,
         phone: orgPhone,
         email: orgEmail,
-        GSTPin: orgGST,
+        GSTIN: orgGST,
         addGST: orgGST == "" ? false : true,
         billingAddress: {
           lineOne: orgAddress_1,
@@ -254,7 +254,7 @@ module.exports = class User {
   //       industry: req.session.industryName,
   //       phone: req.session.orgNum,
   //       email: req.session.orgEmail,
-  //       GSTPin: req.session.orgGST,
+  //       GSTIN: req.session.orgGST,
   //       addGST: req.session.orgGST == "" ? false : true,
   //       billingAddress: {
   //         lineOne: req.session.address1,
