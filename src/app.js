@@ -69,6 +69,7 @@ module.exports = (config) => {
     pass: config.pass,
   });
 
+ 
   const vendor = new Vendor();
   const user = new User({ otp, mailSender });
   const product = new Product();
@@ -100,6 +101,7 @@ module.exports = (config) => {
 
   // logout
   app.get("/api/logout", (req, res) => {
+    
     req.session.destroy();
     res.json({ status: "success", message: "logged out successfully" });
   });

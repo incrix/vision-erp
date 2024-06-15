@@ -27,7 +27,7 @@ module.exports = ({ passport, services, log }) => {
 
     router.post("/cancel-invoice", async (req, res) => {
       try {
-        await services.invoice.cancelInvoice({invoiceId:req.body.invoiceId,req,callBack:function(err,data){ 
+        await services.invoice.cancelInvoice({invoiceId:req.body.invoiceId,req,services,callBack:function(err,data){ 
          if(err) return res.json(err);       
          res.json(data);
      }})

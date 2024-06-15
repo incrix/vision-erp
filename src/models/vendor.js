@@ -72,16 +72,15 @@ const schema = mongoose.Schema(
       },
     },
     balance:{
-      type:{
-        type:String,
-        enum:["in","out"],
-        default:"in",
+      borrow:{
+        type:Number,
+        default:0
       },
-      value:{
+      gave:{
         type:Number,
         default:0
       }
-  }
+    }
   },
   { timestamps: true, versionKey: false }
 );

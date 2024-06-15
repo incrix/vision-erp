@@ -7,8 +7,23 @@ const schema = mongoose.Schema(
       ref:"Org",
       required:true
     },
+    type:{
+      type: String,
+      required: true,
+      enum: ["in", "out", ],
+    },
+    status:{
+    type: String,
+    required: true,
+    enum: ["approved", "pending", "rejected"],
+    },
     name:{
       type: String,
+      required: true,
+    },
+    whose:{
+      type: String,
+      enum:["customer","vendor"],
       required: true,
     },
     clientId: {

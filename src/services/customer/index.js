@@ -16,6 +16,7 @@ module.exports = class Customer {
   
     try {
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
+      console.log(balance.type =='out' ? balance.value : 0);
       return await customer
         .create({
           type,
@@ -31,18 +32,22 @@ module.exports = class Customer {
           companyDetails,
           billingAddress,
           shippingAddress,
-          balance,
+          balance:{
+            borrow:balance.type =='out' ? balance.value : 0,
+            gave:balance.type =='in' ? balance.value : 0,
+          }
         })
         .then(async (customerResponse) => {
 
-            if(customerResponse.balance.value > 0) 
+            if(balance.value > 0) 
            return await services.payment
             .createPayment({
               orgId:req.session.orgId,
               clientId:customerResponse._id,
               name:customerResponse.name,
-              amount:customerResponse.balance.value,
+              amount:balance.value,
               mode:"cash",
+              whose:"customer",
               timestamps:{
                 date: getDate,
                 time: getTime,

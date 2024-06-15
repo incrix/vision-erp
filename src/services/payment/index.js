@@ -1,6 +1,12 @@
 const payment = require("../../models/payment");
-const { getClientVerify } = require("./payUtil");
+const {
+  getClientVerify,
+  decreaseTheClientBalanceInOrOut,
+  addBalanceWithInandOut,
+  checkTheBalanceWithInandOutForCancelPay,
+} = require("./payUtil");
 const { getDateCreated } = require("../../utils/createDate");
+const Customer = require("../../models/customer");
 module.exports = class Payment {
   async createPayment({
     orgId,
@@ -8,6 +14,7 @@ module.exports = class Payment {
     documents,
     amount,
     mode,
+    whose,
     name,
     timestamps,
     description,
@@ -20,6 +27,7 @@ module.exports = class Payment {
         name,
         amount,
         mode,
+        whose,
         type,
         description,
         documents: documents == undefined ? [] : documents,
@@ -29,6 +37,7 @@ module.exports = class Payment {
         return {
           status: "success",
           message: "Create payment successfully",
+          id: response._id,
         };
       })
       .catch((error) => {
@@ -42,9 +51,9 @@ module.exports = class Payment {
 
   async creatPaymentCheck({ req, callback }) {
     try {
-      const getClient = await getClientVerify({ ...req.body, req });
+      let getClient = await getClientVerify({ ...req.body, req });
       const { getDate, getTime, getDateMilliseconds } = getDateCreated;
-  
+      console.log(getClient);
       if (getClient == null || !getClient)
         return callback(null, {
           status: "error",
@@ -56,21 +65,29 @@ module.exports = class Payment {
         name: getClient.name,
         amount: req.body.amount,
         mode: req.body.mode,
+        whose: req.body.whose,
         timestamps: {
           date: getDate,
           time: getTime,
           dateMilliseconds: getDateMilliseconds,
         },
         type: req.body.type,
-        description: req.body.description,
+        description:
+          req.body.description == undefined ? "" : req.body.description,
         documents:
           req.body.documents == undefined ? undefined : req.body.documents,
       })
-        .then((getPayResult) => {
-          
-          return callback(
-            getPayResult
-          );
+        .then(async (getPayResult) => {
+          if (req.body.amount > 0 ) {
+            getClient = await addBalanceWithInandOut({
+              amount: req.body.amount,
+              getClient,
+              type: req.body.type,
+            })
+
+            getClient.save();
+          }
+          return await callback(getPayResult);
         })
         .catch((err) => {
           console.log(err);
@@ -108,6 +125,68 @@ module.exports = class Payment {
         });
     } catch (error) {
       callback(error);
+    }
+  }
+
+  async cancelPayment({ req, callback }) {
+    try {
+      const getPayment = await payment.findOne({
+        orgId: req.session.orgId,
+        _id: req.body.paymentId,
+      });
+
+      if (!getPayment)
+        return callback(null, {
+          status: "error",
+          message: "Payment not found",
+        });
+
+      let getClient = await getClientVerify({
+        whose: getPayment.whose,
+        clientId: getPayment.clientId,
+        req,
+      });
+
+      if (!getClient)
+        return callback(null, {
+          status: "error",
+          message: "Can't find Vendor or Customer",
+        });
+      let getDoc;
+      if (getClient.documents.length > 0)
+        getDoc = await getClient.documents.filter((doc) => doc.type == "erp");
+
+      if (getPayment.amount > 0) {
+        getClient = await decreaseTheClientBalanceInOrOut({
+          amount: getPayment.amount,
+          getClient,
+          type: getPayment.type,
+          documents: getDoc.length > 0 ? true : false,
+          orgId: getPayment.org
+        });
+        await getClient.save();
+      }
+
+      return await payment
+        .deleteOne({ orgId: req.session.orgId, _id: req.body.paymentId })
+        .then(() =>
+          callback(
+            {
+              status: "success",
+              message: "Payment canceled successfully",
+            },
+            false
+          )
+        )
+        .catch((err) =>
+          callback(null, {
+            status: "error",
+            message: "couldn't delete payment",
+          })
+        );
+    } catch (error) {
+      console.log(error);
+      return callback(null, error);
     }
   }
 };

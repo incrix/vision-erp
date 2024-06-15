@@ -27,23 +27,27 @@ module.exports = class Vendor {
         companyDetails,
         billingAddress,
         shippingAddress,
-        balance,
+        balance:{
+          borrow:balance.type =='out' ? balance.value : 0,
+          gave:balance.type =='in' ? balance.value : 0,
+        }
       })
       .then( async (vendorResponse) =>{
-        if(vendorResponse.balance.value > 0) 
+        if(balance.value > 0) 
        return await services.payment
         .createPayment({
           orgId:req.session.orgId,
           clientId:vendorResponse._id,
           name:vendorResponse.name,
-          amount:vendorResponse.balance.value,
+          amount:balance.value,
           mode:"cash",
+          whose:"vendor",
           timestamps:{
             date: getDate,
             time: getTime,
             dateMilliseconds: getDateMilliseconds
           },
-          type:vendorResponse.balance.type,
+          type:balance.type,
         })
         .then((getPayResult) => {
          if(getPayResult.status == "error") return getPayResult
@@ -87,5 +91,6 @@ module.exports = class Vendor {
         callback(null, error);
         return { status: "error", message: "get vendor failed" };
       });
+      
   }
 };

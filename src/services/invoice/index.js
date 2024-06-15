@@ -4,8 +4,9 @@ const { genereateInvoiceId } = require("../../utils/generateID");
 const {
   getPersentageAmount,
   getAmountStatus,
+  checkTheClientBalanceWithInandOut,
 } = require("./invoiceUtil");
-const { getDateCreated,} = require('../../utils/createDate')
+const { getDateCreated } = require("../../utils/createDate");
 const Payment = require("../../models/payment");
 module.exports = class Invoice {
   async createInvoice({ body, req, callBack, services }) {
@@ -48,7 +49,8 @@ module.exports = class Invoice {
       (async () => {
         const invoicecount = await invoice.find({ orgId: req.session.orgId });
         const invoiceId = await genereateInvoiceId(invoicecount);
-        const getCustomer = await Customer.findOne({ _id: cusID });
+        let getCustomer = await Customer.findOne({ _id: cusID });
+
         if (body.totalPrice < body.paidAmount)
           return resolve({
             status: "error",
@@ -141,45 +143,66 @@ module.exports = class Invoice {
             dateMilliseconds: getDateMilliseconds,
           })
           .then(async (getInvoiceResult) => {
-            if(body.paidAmount > 0)
-           return await services.payment
-              .createPayment({
-                orgId:req.session.orgId,
-                clientId:getCustomer._id,
-                name:getCustomer.name,
-                amount:body.paidAmount,
-                mode:body.transationDetails.type,
-                timestamps:{
-                  date: getDate,
-                  time: getTime,
-                  dateMilliseconds: getDateMilliseconds
-                },
-                type: "in",
-                documents: [
-                  {
-                    type: "erp",
-                    id: getInvoiceResult.invoiceId,
+            if (body.paidAmount > 0)
+              return await services.payment
+                .createPayment({
+                  orgId: req.session.orgId,
+                  clientId: getCustomer._id,
+                  name: getCustomer.name,
+                  amount: body.paidAmount,
+                  mode: body.transationDetails.type,
+                  timestamps: {
+                    date: getDate,
+                    time: getTime,
+                    dateMilliseconds: getDateMilliseconds,
                   },
-                ],
-              })
-              .then((getPayResult) => {
-               
-                resolve({
-                  status: "success",
-                  message: "Invoice Created Successfully",
-                });
-              })
-              .catch((err) => {
-                console.log(err);
-                callBack(null, {
-                  status: "error",
-                  message: "Getting Error When Create Invoice",
-                });
-              });
-             return resolve({
-                status: "success",
-                message: "Invoice Created Successfully",
-              });
+                  type: "in",
+                  whose: "customer",
+                  documents: [
+                    {
+                      type: "erp",
+                      id: getInvoiceResult.invoiceId,
+                    },
+                  ],
+                })
+                .then(async (getPayResult) => {
+                 
+                  new Promise((resolve, reject) => {
+                    (async () => {
+                      getCustomer = await checkTheClientBalanceWithInandOut({
+                        paidAmount: body.paidAmount,
+                        totalAmount: body.totalPrice,
+                        getCustomer,
+                      });
+                      
+                       await getCustomer.save();
+                    })();
+                  });
+                
+                  // add payment details in invoice  and save them
+                  getInvoiceResult.paymentTransactions.push(getPayResult.id)
+                 await getInvoiceResult.save()
+                  resolve({
+                    status: "success",
+                    message: "Invoice Created Successfully",
+                  });
+                })
+                .catch((err) => {
+                  console.log(err);
+                  callBack(null, {
+                    status: "error",
+                    message: "Getting Error When Create Invoice",
+                  });
+                })
+                else {
+                  getCustomer.balance.borrow = getCustomer.balance.borrow + body.totalPrice
+                  await getCustomer.save()
+                }
+
+            return resolve({
+              status: "success",
+              message: "Invoice Created Successfully",
+            });
           })
           .catch((err) => {
             console.log(err);
@@ -192,36 +215,11 @@ module.exports = class Invoice {
     });
   }
 
-  // async createPayment({
-  //   req,
-  //   getInvoiceResult,
-  //   getCustomer,
-  //   body,
-  //   getDate,
-  //   getTime,
-  //   getDateMilliseconds,
-  // }) {
-  //   await Payment.create({
-  //     orgId: req.session.orgId,
-  //     clientId: getCustomer._id,
-  //     amount: body.paidAmount,
-  //     mode: body.transationDetails.type,
-  //     type: "got",
-  //     documents: {
-  //       type: "erp",
-  //       id: getInvoiceResult.invoiceId,
-  //     },
-  //     timestamps: {
-  //       date: getDate,
-  //       time: getTime,
-  //       dateMilliseconds: getDateMilliseconds,
-  //     },
-  //   });
-  // }
+
 
   async getAllInvoice({ req, callBack }) {
-    try {
-      //  const getInvoice = await Payment.find({ orgId: req.session.orgId })
+    try {     
+  
       const getInvoice = await invoice.find({ orgId: req.session.orgId });
       if (!getInvoice)
         callBack(null, {
@@ -233,7 +231,7 @@ module.exports = class Invoice {
       callBack(error);
     }
   }
-  async cancelInvoice({ req, callBack, invoiceId }) {
+  async cancelInvoice({ req, callBack,services, invoiceId }) {
     try {
       const getInvoice = await invoice.findOne({
         orgId: req.session.orgId,
@@ -244,39 +242,49 @@ module.exports = class Invoice {
           status: "error",
           message: "something went wrong with organization Id",
         });
+        if(getInvoice.paymentTransactions.length > 0)
+     {  
+       for(let i = 0; i < getInvoice.paymentTransactions.length; i++)
+          {
+            new Promise((resolve, reject) => {
+            (async ()=>{
+              req.body.paymentId = getInvoice.paymentTransactions[i]
+                 await services.payment.cancelPayment({req,callback:function(err,data){ 
+                  if(err) 
+                   console.log(err)
+                  //   return  callBack(
+                  //   { status: "error", message: "Something went wrong " },
+                  //   false
+                  // );     
+                  resolve();
+              }})       
+              })()
+  
+            })
+          }
+          console.log('after');
+        }
       getInvoice.status = "cancelled";
       await getInvoice.save();
       callBack(
-        { status: "status", message: "invoice cancelled successfully" },
+        { status: "success", message: "invoice cancelled successfully" },
         false
       );
     } catch (error) {
       callBack(error);
     }
   }
-  async cancelInvoice({ req, callBack, invoiceId }) {
-    try {
-      const getInvoice = await invoice.findOne({
-        orgId: req.session.orgId,
-        invoiceId,
-      });
-      if (!getInvoice)
-        callBack(null, {
-          status: "error",
-          message: "something went wrong with organization Id",
-        });
-      getInvoice.status = "cancelled";
-      await getInvoice.save();
-      callBack(
-        { status: "status", message: "invoice cancelled successfully" },
-        false
-      );
-    } catch (error) {
-      callBack(error);
-    }
-  }
+ 
   async deleteInvoice({ req, callBack, invoiceId }) {
     try {
+      const checkIsCancel = await invoice.findOne({ orgId: req.session.orgId,
+        invoiceId})
+      
+        if (checkIsCancel.status !== "cancelled")
+         return callBack(null, {
+            status: "error",
+            message: "Invoice is not cancelled so you could not delete this",
+          });
       const getInvoice = await invoice.deleteOne({
         orgId: req.session.orgId,
         invoiceId,
