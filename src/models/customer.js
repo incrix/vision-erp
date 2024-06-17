@@ -19,7 +19,7 @@ const schema = mongoose.Schema(
     type: {
       type: String,
       enum: {
-        values: ["business", "individual"],
+        values: ["Business", "Individual"],
       },
     },
     companyDetails: {
