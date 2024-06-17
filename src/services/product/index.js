@@ -63,13 +63,16 @@ module.exports = class Product {
     try {
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
       const productId = await generateProductID();
-
       // // add discount information
       // body.eCommerceDetails.eDiscount.amount =
       //   body.eCommerceDetails.eDiscount.type == "%"
       //     ? body.eCommerceDetails.eSellingPrice *
       //       (body.eCommerceDetails.eDiscount.value / 100)
       //     : body.eCommerceDetails.value;
+
+      const taxValue = body.withinTax
+        ? body.unitPrice - (body.unitPrice * 100) / (100 + body.taxRate)
+        : (body.unitPrice * body.taxRate) / 100;
       const getproduct = await product.findOne({
         userId: req.session.userId,
         type: body.type,
@@ -99,16 +102,15 @@ module.exports = class Product {
           date: getDate,
           time: getTime,
           dateMilliseconds: getDateMilliseconds,
-          unitPrice: body.withinTax == true ? body.unitPrice - (body.unitPrice * body.taxRate) / 100 : body.unitPrice,
-          priceWithTax:
-            body.withinTax 
-              ? body.unitPrice
-              : eval(body.unitPrice) +
-                eval((body.unitPrice * body.taxRate) / 100),
+          unitPrice:
+            body.withinTax == true ? body.unitPrice - taxValue : body.unitPrice,
+          priceWithTax: body.withinTax
+            ? body.unitPrice
+            : eval(body.unitPrice) + eval(taxValue),
           purchasePrice: body.purchasePrice,
           tax: {
             rate: body.taxRate,
-            value: (body.unitPrice * body.taxRate) / 100,
+            value: taxValue,
           },
           stockQty: body.stockQty,
           isSales: body.isSales,
