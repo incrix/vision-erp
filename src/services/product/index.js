@@ -3,36 +3,36 @@ const {
   generateCategoryID,
   generateProductID,
 } = require("../../utils/generateID");
-const { getDateCreated,} = require('../../utils/createDate')
+const { getDateCreated } = require("../../utils/createDate");
 const product = require("../../models/product");
 const User = require("../../models/user");
 const Org = require("../../models/Org");
 module.exports = class Product {
   async createCategory({ req, catName, imageUrl }) {
     try {
-      return await Category.findOne({ userId: req.session.userId,orgId:req.session.orgId }).then(
-        async (category) => {
-          if (category == null)
-            return { status: "error", message: "can't find user" };
-          const getCat =
-            category.catList.length > 0
-              ? await category.catList.filter((c) => c.name == catName)
-              : 0;
-          if (getCat.length > 0) {
-            return { status: "error", message: "Category already exists" };
-          }
-
-          category.catList.push({
-            name: catName,
-            catId: await generateCategoryID(),
-            catImageUrl:
-            imageUrl == undefined || imageUrl == "" ? "" : imageUrl,
-            online: imageUrl == undefined || imageUrl == "" ? false : true,
-          });
-          await category.save();
-          return { status: "success", message: "Category added successfully" };
+      return await Category.findOne({
+        userId: req.session.userId,
+        orgId: req.session.orgId,
+      }).then(async (category) => {
+        if (category == null)
+          return { status: "error", message: "can't find user" };
+        const getCat =
+          category.catList.length > 0
+            ? await category.catList.filter((c) => c.name == catName)
+            : 0;
+        if (getCat.length > 0) {
+          return { status: "error", message: "Category already exists" };
         }
-      );
+
+        category.catList.push({
+          name: catName,
+          catId: await generateCategoryID(),
+          catImageUrl: imageUrl == undefined || imageUrl == "" ? "" : imageUrl,
+          online: imageUrl == undefined || imageUrl == "" ? false : true,
+        });
+        await category.save();
+        return { status: "success", message: "Category added successfully" };
+      });
     } catch (error) {
       throw error;
     }
@@ -40,7 +40,10 @@ module.exports = class Product {
 
   async getCategory({ req }) {
     try {
-      return await Category.findOne({ userId: req.session.userId,orgId: req.session.orgId})
+      return await Category.findOne({
+        userId: req.session.userId,
+        orgId: req.session.orgId,
+      })
         .then((category) => {
           return {
             status: "success",
@@ -56,12 +59,11 @@ module.exports = class Product {
     }
   }
 
-
   async createProduct({ req, body }) {
     try {
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
       const productId = await generateProductID();
-     
+
       // // add discount information
       // body.eCommerceDetails.eDiscount.amount =
       //   body.eCommerceDetails.eDiscount.type == "%"
@@ -97,18 +99,22 @@ module.exports = class Product {
           date: getDate,
           time: getTime,
           dateMilliseconds: getDateMilliseconds,
-          unitPrice:body.unitPrice,
-          priceWithTax: body.unitPrice + (body.unitPrice * body.taxRate) /100,
+          unitPrice: body.withinTax == true ? body.unitPrice - (body.unitPrice * body.taxRate) / 100 : body.unitPrice,
+          priceWithTax:
+            body.withinTax 
+              ? body.unitPrice
+              : eval(body.unitPrice) +
+                eval((body.unitPrice * body.taxRate) / 100),
           purchasePrice: body.purchasePrice,
           tax: {
             rate: body.taxRate,
-            value: (body.unitPrice * body.taxRate) /100,
+            value: (body.unitPrice * body.taxRate) / 100,
           },
           stockQty: body.stockQty,
           isSales: body.isSales,
           unit: body.unit,
-          description:body.description,
-          discount:body.discount
+          description: body.description,
+          discount: body.discount,
         })
         .then(async (createProductResponse) => {
           return { status: "success", message: "Product added successfully" };
@@ -125,7 +131,7 @@ module.exports = class Product {
   async getAllProducts({ req }) {
     try {
       return await product
-        .find({ userId: req.session.userId,orgId: req.session.orgId})
+        .find({ userId: req.session.userId, orgId: req.session.orgId })
         .then((product) => {
           return {
             status: "success",
@@ -143,12 +149,17 @@ module.exports = class Product {
   async productActive({ req, productId }) {
     try {
       return await product
-        .findOne({ productId, userId: req.session.userId,orgId: req.session.orgId})
+        .findOne({
+          productId,
+          userId: req.session.userId,
+          orgId: req.session.orgId,
+        })
         .then(async (product) => {
-          if (product == null) return {
-            status: "error",
-            message: "Product not found",
-          }; 
+          if (product == null)
+            return {
+              status: "error",
+              message: "Product not found",
+            };
           product.erpDetails.erpActive = !product.erpDetails.erpActive;
           await product.save();
           return {
