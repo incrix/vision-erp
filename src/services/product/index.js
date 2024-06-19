@@ -73,9 +73,11 @@ module.exports = class Product {
       let taxValue = body.withinTax
         ? body.unitPrice - (body.unitPrice * 100) / (100 + body.taxRate)
         : (body.unitPrice * body.taxRate) / 100;
-      if(body.withinTax) {
-        taxValue =  taxValue - body.withinTax
-      }
+        console.log(taxValue);
+      // if(body.withinTax) {
+      //   taxValue =  taxValue - body.withinTax
+      // }
+      // console.log(taxValue);
       const getproduct = await product.findOne({
         userId: req.session.userId,
         type: body.type,
