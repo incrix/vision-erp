@@ -130,7 +130,7 @@
 // module.exports = mongoose.model("Product", schema);
 
 const mongoose = require("mongoose");
-const unit = require("../utils/unit")
+const unit = require("../utils/unit");
 const schema = mongoose.Schema(
   {
     type: {
@@ -199,6 +199,7 @@ const schema = mongoose.Schema(
       required: true,
       default: 1,
     },
+
     isSales: {
       type: Boolean,
       default: false,
@@ -211,6 +212,9 @@ const schema = mongoose.Schema(
       type: String,
       default: "<p></p>",
     },
+    withinTax: {
+      type: Boolean,
+    },
     discount: {
       type: {
         type: String,
@@ -221,7 +225,7 @@ const schema = mongoose.Schema(
         type: Number,
         default: 0,
       },
-  },
+    },
     createdAt: {
       type: Date,
       default: Date.now,

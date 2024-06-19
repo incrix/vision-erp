@@ -14,7 +14,7 @@ const schema = mongoose.Schema(
     },
     status:{
     type: String,
-    required: true,
+    // required: true,
     enum: ["approved", "pending", "rejected"],
     },
     name:{

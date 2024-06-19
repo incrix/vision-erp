@@ -70,9 +70,12 @@ module.exports = class Product {
       //       (body.eCommerceDetails.eDiscount.value / 100)
       //     : body.eCommerceDetails.value;
 
-      const taxValue = body.withinTax
+      let taxValue = body.withinTax
         ? body.unitPrice - (body.unitPrice * 100) / (100 + body.taxRate)
         : (body.unitPrice * body.taxRate) / 100;
+      if(body.withinTax) {
+        taxValue =  taxValue - body.withinTax
+      }
       const getproduct = await product.findOne({
         userId: req.session.userId,
         type: body.type,
@@ -94,6 +97,7 @@ module.exports = class Product {
           type: body.type,
           name: body.name,
           productId,
+          withinTax:body.withinTax,
           userId: req.session.userId,
           orgId: req.session.orgId,
           categoryId:
@@ -110,7 +114,7 @@ module.exports = class Product {
           purchasePrice: body.purchasePrice,
           tax: {
             rate: body.taxRate,
-            value: taxValue,
+            value: taxValue ,
           },
           stockQty: body.stockQty,
           isSales: body.isSales,
