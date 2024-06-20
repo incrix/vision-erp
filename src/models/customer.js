@@ -82,6 +82,7 @@ const schema = mongoose.Schema(
     },
     ledger: [
       {
+        _id: false,
         id: {
           type: String,
         },

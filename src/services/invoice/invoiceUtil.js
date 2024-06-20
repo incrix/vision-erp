@@ -38,19 +38,18 @@ exports.createClientBalanceForInvoice = ({
   getCustomer,
   invoice,
 }) => {
-
-const summa = getCustomer.balance.currentBalance
+  const summa = getCustomer.balance.currentBalance;
   if (getCustomer.balance.currentBalance > 0)
     getCustomer.balance.currentBalance =
       totalAmount + getCustomer.balance.currentBalance;
   else if (getCustomer.balance.currentBalance > -totalAmount)
     getCustomer.balance.currentBalance =
       totalAmount - Math.abs(getCustomer.balance.currentBalance);
-else  {
-  getCustomer.balance.currentBalance =
-Math.abs(getCustomer.balance.currentBalance) - totalAmount
-getCustomer.balance.currentBalance = -getCustomer.balance.currentBalance 
-}
+  else {
+    getCustomer.balance.currentBalance =
+      Math.abs(getCustomer.balance.currentBalance) - totalAmount;
+    getCustomer.balance.currentBalance = -getCustomer.balance.currentBalance;
+  }
 
   getCustomer.ledger.push({
     id: invoice._id,
