@@ -1,4 +1,5 @@
 const moment = require('moment-timezone');
+const {isValidDateFormat}  = require('./utils/checkDateFormat')
 exports.checkAuthenticated = (req, res, next) => {
   if (req.session.passport !== undefined) {
     return next();
@@ -17,8 +18,14 @@ exports.checkNotAuthenticated = (req, res, next) => {
 exports.sessionExpire = (req, res, next) => {
   // get the date multiple unix value from 1000 
   // console.log(new Date(1709906417 * 1000));
+  
   const date = new Date()
 
+  if(req.body.date !== undefined)
+ { 
+  
+  if(isValidDateFormat(req.body.date,'DD/MM/YYYY') == false) return res.json({status:"error",message:"Invalid date format"})
+}
  if(req.session.expire){
   const now = moment(date);
 

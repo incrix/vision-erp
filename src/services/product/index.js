@@ -63,21 +63,13 @@ module.exports = class Product {
     try {
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
       const productId = await generateProductID();
-      // // add discount information
-      // body.eCommerceDetails.eDiscount.amount =
-      //   body.eCommerceDetails.eDiscount.type == "%"
-      //     ? body.eCommerceDetails.eSellingPrice *
-      //       (body.eCommerceDetails.eDiscount.value / 100)
-      //     : body.eCommerceDetails.value;
+
 
       let taxValue = body.withinTax
         ? body.unitPrice - (body.unitPrice * 100) / (100 + body.taxRate)
         : (body.unitPrice * body.taxRate) / 100;
         console.log(taxValue);
-      // if(body.withinTax) {
-      //   taxValue =  taxValue - body.withinTax
-      // }
-      // console.log(taxValue);
+ 
       const getproduct = await product.findOne({
         userId: req.session.userId,
         type: body.type,

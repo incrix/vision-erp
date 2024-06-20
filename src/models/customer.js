@@ -13,7 +13,7 @@ const schema = mongoose.Schema(
     email: {
       type: String,
     },
-    phone:{
+    phone: {
       type: Number,
     },
     type: {
@@ -51,7 +51,7 @@ const schema = mongoose.Schema(
     },
     shippingAddress: [
       {
-        _id:false,
+        _id: false,
         address1: {
           type: String,
         },
@@ -67,7 +67,6 @@ const schema = mongoose.Schema(
         zipCode: {
           type: String,
         },
-
       },
     ],
     timestamps: {
@@ -81,17 +80,46 @@ const schema = mongoose.Schema(
         type: Number,
       },
     },
-    balance:{
-      borrow:{
-        type:Number,
-        default:0
+    ledger: [
+      {
+        id: {
+          type: String,
+        },
+        createAt: {
+          type: Date,
+          default: Date.now(),
+        },
+        subTitle:{
+          type: String,
+        },
+        mode: {
+          type: String,
+          enum: ["Credit", "Debit", "UPI", "Cash"],
+        },
+        amount: {
+          type: Number,
+        },
+        staus: {
+          type: String,
+          enum: ["pending","partially","paid"],
+        },
+        closingBalance: {
+          type: Number,
+        },
       },
-      gave:{
-        type:Number,
-        default:0
-      }
-    }
-
+    ],
+    //Credit  == you pay the customer
+    // Debit == customer pay you
+    balance: {
+      openingBalance: {
+        type: Number,
+        default: 0,
+      },
+      currentBalance: {
+        type: Number,
+        default: 0,
+      },
+    },
   },
   { timestamps: true, versionKey: false }
 );

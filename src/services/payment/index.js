@@ -6,10 +6,12 @@ const {
   checkTheBalanceWithInandOutForCancelPay,
 } = require("./payUtil");
 const { getDateCreated } = require("../../utils/createDate");
+const { generatePaymentId } = require("../../utils/generateID");
 const Customer = require("../../models/customer");
 module.exports = class Payment {
   async createPayment({
     orgId,
+    // id,
     clientId,
     documents,
     amount,
@@ -19,16 +21,24 @@ module.exports = class Payment {
     timestamps,
     description,
     type,
+    date,
+    paymentDate,
   }) {
     return await payment
       .create({
         orgId,
+        id: await generatePaymentId({
+          orgId,
+          type,
+        }),
         clientId,
         name,
         amount,
         mode,
         whose,
         type,
+        date,
+        paymentDate,
         description,
         documents: documents == undefined ? [] : documents,
         timestamps,
@@ -52,6 +62,7 @@ module.exports = class Payment {
   async creatPaymentCheck({ req, callback }) {
     try {
       let getClient = await getClientVerify({ ...req.body, req });
+
       const { getDate, getTime, getDateMilliseconds } = getDateCreated;
       console.log(getClient);
       if (getClient == null || !getClient)
@@ -66,11 +77,12 @@ module.exports = class Payment {
         amount: req.body.amount,
         mode: req.body.mode,
         whose: req.body.whose,
-        timestamps: {
-          date: getDate,
-          time: getTime,
-          dateMilliseconds: getDateMilliseconds,
-        },
+        paymentDate: req.body.date,
+        // timestamps: {
+        //   date: getDate,
+        //   time: getTime,
+        //   dateMilliseconds: getDateMilliseconds,
+        // },
         type: req.body.type,
         description:
           req.body.description == undefined ? "" : req.body.description,
@@ -78,12 +90,12 @@ module.exports = class Payment {
           req.body.documents == undefined ? undefined : req.body.documents,
       })
         .then(async (getPayResult) => {
-          if (req.body.amount > 0 ) {
+          if (req.body.amount > 0) {
             getClient = await addBalanceWithInandOut({
               amount: req.body.amount,
               getClient,
               type: req.body.type,
-            })
+            });
 
             getClient.save();
           }
@@ -162,7 +174,7 @@ module.exports = class Payment {
           getClient,
           type: getPayment.type,
           documents: getDoc.length > 0 ? true : false,
-          orgId: getPayment.org
+          orgId: getPayment.org,
         });
         await getClient.save();
       }

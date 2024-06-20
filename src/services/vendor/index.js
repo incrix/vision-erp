@@ -40,7 +40,7 @@ module.exports = class Vendor {
           clientId:vendorResponse._id,
           name:vendorResponse.name,
           amount:balance.value,
-          mode:"cash",
+          mode:"Cash",
           whose:"vendor",
           timestamps:{
             date: getDate,

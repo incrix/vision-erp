@@ -7,7 +7,7 @@ const schema = mongoose.Schema({
     ref: "Org",
     required: true,
   },
-  invoiceId: {
+  id: {
     type: String,
     required: true,
   },
@@ -66,7 +66,7 @@ const schema = mongoose.Schema({
   transationDetails: {
     mode: {
       type: String,
-      enum: ["debit", "cash", "upi", "credit"],
+      enum: ["Debit", "Cash", "UPI", "Credit"],
     },
   },
   items: [
@@ -155,7 +155,7 @@ const schema = mongoose.Schema({
   status: {
     type: String,
     // required: true,
-    enum: ["pending", "completed", "cancelled", "partial"],
+    enum: ["pending", "completed", "cancelled", "partially"],
   },
 
   date: {
@@ -242,7 +242,7 @@ module.exports = mongoose.model("Invoice", schema);
 //   transationDetails: {
 //     mode: {
 //       type: String,
-//       enum: ["debit", "cash", "upi", "credit"],
+//       enum: ["Debit", "Cash", "UPI", "Credit"],
 //     },
 //   },
 //   items: [
@@ -355,7 +355,7 @@ module.exports = mongoose.model("Invoice", schema);
 //   status: {
 //     type: String,
 //     // required: true,
-//     enum: ["pending", "completed", "cancelled", "partial"],
+//     enum: ["pending", "completed", "cancelled", "partially"],
 //   },
 
 //   date: {

@@ -3,27 +3,23 @@ const mongoose = require("mongoose");
 const schema = mongoose.Schema(
   {
     orgId: {
-      type:mongoose.Schema.Types.ObjectId,
-      ref:"Org",
-      required:true
-    },
-    type:{
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Org",
       required: true,
-      enum: ["in", "out", ],
     },
-    status:{
-    type: String,
-    // required: true,
-    enum: ["approved", "pending", "rejected"],
+
+    isCancelled: {
+      type: Boolean,
+      required: true,
+      default: false,
     },
-    name:{
+    name: {
       type: String,
       required: true,
     },
-    whose:{
+    whose: {
       type: String,
-      enum:["customer","vendor"],
+      enum: ["customer", "vendor"],
       required: true,
     },
     clientId: {
@@ -36,7 +32,7 @@ const schema = mongoose.Schema(
     },
     mode: {
       type: String,
-      enum: ["cash", "card", "debit", "upi"],
+      enum: ["Cash", "card", "Debit", "UPI"],
       required: true,
     },
     type: {
@@ -47,6 +43,10 @@ const schema = mongoose.Schema(
     description: {
       type: String,
     },
+    id: {
+      type: String,
+      required: true,
+    },
     documents: [
       {
         type: {
@@ -56,19 +56,15 @@ const schema = mongoose.Schema(
         id: {
           type: String,
         },
-        _id:false
+        _id: false,
       },
     ],
-    timestamps: {
-      date: {
-        type: String,
-      },
-      time: {
-        type: String,
-      },
-      dateMilliseconds: {
-        type: Number,
-      },
+    date: {
+      type: String,
+    },
+    createAt: {
+      type: Date,
+      default: Date.now(),
     },
   },
   { timestamps: true, versionKey: false }

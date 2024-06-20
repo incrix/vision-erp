@@ -4,8 +4,9 @@ const { genereateInvoiceId } = require("../../utils/generateID");
 const {
   getPersentageAmount,
   getAmountStatus,
-  checkTheClientBalanceWithInandOut,
+  createClientBalanceForInvoice,createClientBalanceForPayment
 } = require("./invoiceUtil");
+
 const { getDateCreated } = require("../../utils/createDate");
 const Payment = require("../../models/payment");
 module.exports = class Invoice {
@@ -63,7 +64,7 @@ module.exports = class Invoice {
           .create({
             orgId: req.session.orgId,
             userId: req.session.userId,
-            invoiceId,
+            id:invoiceId,
             customerDetails: {
               customerName: getCustomer.name,
               cusID: getCustomer._id,
@@ -138,11 +139,21 @@ module.exports = class Invoice {
               paidAmount: body.paidAmount,
               disValue: body.discount.value,
             }),
-            date: getDate,
-            time: getTime,
-            dateMilliseconds: getDateMilliseconds,
+            date: req.body.date,
           })
           .then(async (getInvoiceResult) => {
+            new Promise((resolve, reject) => {
+              (async () => {
+                getCustomer = await createClientBalanceForInvoice({
+                  paidAmount: body.paidAmount,
+                  totalAmount: body.totalPrice,
+                  invoice:getInvoiceResult,
+                  getCustomer,
+                });
+                
+               //  await getCustomer.save();
+              })();
+            });
             if (body.paidAmount > 0)
               return await services.payment
                 .createPayment({
@@ -151,11 +162,7 @@ module.exports = class Invoice {
                   name: getCustomer.name,
                   amount: body.paidAmount,
                   mode: body.transationDetails.type,
-                  timestamps: {
-                    date: getDate,
-                    time: getTime,
-                    dateMilliseconds: getDateMilliseconds,
-                  },
+                  date:req.body.date,
                   type: "in",
                   whose: "customer",
                   documents: [
@@ -169,9 +176,10 @@ module.exports = class Invoice {
                  
                   new Promise((resolve, reject) => {
                     (async () => {
-                      getCustomer = await checkTheClientBalanceWithInandOut({
+                      getCustomer = await createClientBalanceForPayment({
                         paidAmount: body.paidAmount,
                         totalAmount: body.totalPrice,
+                        payment:getPayResult,
                         getCustomer,
                       });
                       
@@ -195,7 +203,7 @@ module.exports = class Invoice {
                   });
                 })
                 else {
-                  getCustomer.balance.borrow = getCustomer.balance.borrow + body.totalPrice
+                 // getCustomer.balance.borrow = getCustomer.balance.borrow + body.totalPrice
                   await getCustomer.save()
                 }
 
