@@ -48,6 +48,7 @@ module.exports = class Payment {
           status: "success",
           message: "Create payment successfully",
           id: response._id,
+          paymentId: response.id
         };
       })
       .catch((error) => {

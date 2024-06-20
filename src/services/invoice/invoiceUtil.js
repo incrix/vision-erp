@@ -52,7 +52,7 @@ exports.createClientBalanceForInvoice = ({
   }
 
   getCustomer.ledger.push({
-    id: invoice._id,
+    id: invoice.id,
     amount: totalAmount,
     date: invoice.date,
     staus:
@@ -78,8 +78,9 @@ exports.createClientBalanceForPayment = ({
   getCustomer,
   payment,
 }) => {
+  console.log(payment);
   getCustomer.ledger.push({
-    id: payment._id,
+    id: payment.paymentId,
     amount: paidAmount,
     date: payment.date,
     mode: payment.mode,
