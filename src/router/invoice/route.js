@@ -47,5 +47,16 @@ module.exports = ({ passport, services, log }) => {
     } 
     })
 
+    router.post("/invoice-payment",async(req,res) =>{
+      try {
+        await services.invoice.invoicePayment({body:req.body,req,services,callBack:function(err,data){ 
+         if(err) return res.json(err);       
+         res.json(data);
+     }})
+    } catch (error) {
+      res.json({status: 'error', error: error});
+    }
+    })
+
   return router;
 };

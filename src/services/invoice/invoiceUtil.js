@@ -20,12 +20,11 @@ exports.getDateCreated = () => {
 
 exports.getAmountStatus = ({
   totalPrice,
-  cusBalance,
-  disValue,
+
   paidAmount,
 }) => {
   if (totalPrice == paidAmount) {
-    return "completed";
+    return "paid";
   } else if (paidAmount > 0) {
     return "partially";
   }
@@ -38,24 +37,35 @@ exports.createClientBalanceForInvoice = ({
   getCustomer,
   invoice,
 }) => {
-  const summa = getCustomer.balance.currentBalance;
-  if (getCustomer.balance.currentBalance > 0)
-    getCustomer.balance.currentBalance =
-      totalAmount + getCustomer.balance.currentBalance;
-  else if (getCustomer.balance.currentBalance > -totalAmount)
-    getCustomer.balance.currentBalance =
-      totalAmount - Math.abs(getCustomer.balance.currentBalance);
+  // if (getCustomer.balance.currentBalance > 0)
+  //   getCustomer.balance.currentBalance =
+  //     totalAmount + getCustomer.balance.currentBalance;
+  // else if (getCustomer.balance.currentBalance > -totalAmount)
+  //   getCustomer.balance.currentBalance =
+  //     totalAmount - Math.abs(getCustomer.balance.currentBalance);
+  // else {
+  //   getCustomer.balance.currentBalance =
+  //     Math.abs(getCustomer.balance.currentBalance) - totalAmount;
+  //   getCustomer.balance.currentBalance = -getCustomer.balance.currentBalance;
+  // }
+
+  let balanceValue =
+    getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance;
+  if (balanceValue > 0) {
+    balanceValue = totalAmount + balanceValue;
+    // getCustomer.balance.currentBalance = totalAmount + balanceValue;
+  } else if (balanceValue > -totalAmount)
+    balanceValue = totalAmount - Math.abs(balanceValue);
   else {
-    getCustomer.balance.currentBalance =
-      Math.abs(getCustomer.balance.currentBalance) - totalAmount;
-    getCustomer.balance.currentBalance = -getCustomer.balance.currentBalance;
+    balanceValue = Math.abs(balanceValue) - totalAmount;
+    balanceValue = -balanceValue;
   }
 
   getCustomer.ledger.push({
     id: invoice.id,
     amount: totalAmount,
     date: invoice.date,
-    staus:
+    status:
       paidAmount == 0
         ? "pending"
         : totalAmount == paidAmount
@@ -64,7 +74,7 @@ exports.createClientBalanceForInvoice = ({
         ? "partially"
         : null,
     subTitle: "invoice",
-    closingBalance: getCustomer.balance.currentBalance,
+    closingBalance: balanceValue,
   });
   //Credit or out   == you pay the customer && green , minus
   // Debit or in == customer pay you && red , plus
@@ -74,11 +84,10 @@ exports.createClientBalanceForInvoice = ({
 
 exports.createClientBalanceForPayment = ({
   paidAmount,
-  totalAmount,
   getCustomer,
   payment,
 }) => {
-  console.log(payment);
+  const balanceAmount = getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance;
   getCustomer.ledger.push({
     id: payment.paymentId,
     amount: paidAmount,
@@ -86,17 +95,17 @@ exports.createClientBalanceForPayment = ({
     mode: payment.mode,
     subTitle: "payment in",
     closingBalance: addCustomerBalance({
-      balance: getCustomer.balance.currentBalance,
+      balance: balanceAmount,
       paidAmount,
     }),
   });
   //Credit or out   == you pay the customer && green , minus
   // Debit or in == customer pay you && red , plus
 
-  getCustomer.balance.currentBalance = addCustomerBalance({
-    balance: getCustomer.balance.currentBalance,
-    paidAmount,
-  });
+  // getCustomer.balance.currentBalance = addCustomerBalance({
+  //   balance:balanceAmount, 
+  //   paidAmount,
+  // });
   return getCustomer;
 };
 
@@ -106,3 +115,15 @@ const addCustomerBalance = ({ balance, paidAmount }) => {
   }
   return balance - paidAmount;
 };
+
+// const addCustomerBalance = ({ balance, paidAmount }) => {
+//   if (balance > 0) {
+//     return balance - paidAmount;
+//   }
+//   if (balance > -paidAmount) balance = paidAmount - Math.abs(balance);
+//   else {
+//     balance = Math.abs(balance) - paidAmount;
+//     balance = -balance;
+//   }
+//   return balance - paidAmount;
+// };

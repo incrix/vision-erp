@@ -56,6 +56,6 @@ try {
 
     return res.json({status:"error",isLogin:false,message:"user is not logged in"})
 } catch (error) {
-  res.json({ staus:'error',message:error.message})
+  res.json({ status:'error',message:error.message})
 }
 }

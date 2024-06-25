@@ -100,7 +100,7 @@ const schema = mongoose.Schema(
         amount: {
           type: Number,
         },
-        staus: {
+        status: {
           type: String,
           enum: ["pending","partially","paid"],
         },

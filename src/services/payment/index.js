@@ -11,7 +11,6 @@ const Customer = require("../../models/customer");
 module.exports = class Payment {
   async createPayment({
     orgId,
-    // id,
     clientId,
     documents,
     amount,
