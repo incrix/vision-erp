@@ -18,7 +18,7 @@ exports.checkNotAuthenticated = (req, res, next) => {
 exports.sessionExpire = (req, res, next) => {
   // get the date multiple unix value from 1000 
   // console.log(new Date(1709906417 * 1000));
-  
+
   const date = new Date()
 
   if(req.body.date !== undefined)
@@ -26,6 +26,7 @@ exports.sessionExpire = (req, res, next) => {
   
   if(isValidDateFormat(req.body.date,'DD/MM/YYYY') == false) return res.json({status:"error",message:"Invalid date format"})
 }
+if(req.session.expire == undefined) return res.json({status:"error",message:'You don`t have authenticated'})
  if(req.session.expire){
   const now = moment(date);
 
@@ -41,6 +42,7 @@ exports.sessionExpire = (req, res, next) => {
   req.session.expire = now.unix();
   return next();
  }
+
  return next();
 };
 
