@@ -23,6 +23,7 @@ module.exports = class Payment {
     date,
     paymentDate,
   }) {
+  
     return await payment
       .create({
         orgId,
@@ -47,7 +48,7 @@ module.exports = class Payment {
           status: "success",
           message: "Create payment successfully",
           id: response._id,
-          paymentId: response.id
+          paymentId: response.id,
         };
       })
       .catch((error) => {
@@ -63,8 +64,7 @@ module.exports = class Payment {
     try {
       let getClient = await getClientVerify({ ...req.body, req });
 
-      const { getDate, getTime, getDateMilliseconds } = getDateCreated;
-      console.log(getClient);
+
       if (getClient == null || !getClient)
         return callback(null, {
           status: "error",
@@ -140,8 +140,15 @@ module.exports = class Payment {
     }
   }
 
-  async cancelPayment({ req, callback }) {
+  async cancelPayment({
+    req,
+    invoiceAmount,
+    lastIndex,
+    callback,
+    invoicePaidAmount,
+  }) {
     try {
+      console.log("calling 1");
       const getPayment = await payment.findOne({
         orgId: req.session.orgId,
         _id: req.body.paymentId,
@@ -155,41 +162,50 @@ module.exports = class Payment {
 
       let getClient = await getClientVerify({
         whose: getPayment.whose,
-        clientId: getPayment.clientId,
+        id: getPayment.clientId,
         req,
       });
-
-      if (!getClient)
-        return callback(null, {
+      if (getClient.status == "error") return callback(null, getClient);
+      if (!getClient || getClient == null)
+        return callback(null,{
           status: "error",
           message: "Can't find Vendor or Customer",
         });
-      let getDoc;
-      if (getClient.documents.length > 0)
-        getDoc = await getClient.documents.filter((doc) => doc.type == "erp");
 
-      if (getPayment.amount > 0) {
+      if (getPayment.isCancelled)
+        return callback(null, {
+          status: "error",
+          message: "Payment is already cancelled",
+        });
+
+      if (getPayment.amount > 0 && getPayment.isCancelled == false) {
         getClient = await decreaseTheClientBalanceInOrOut({
           amount: getPayment.amount,
+          invoicePaidAmount,
           getClient,
-          type: getPayment.type,
-          documents: getDoc.length > 0 ? true : false,
-          orgId: getPayment.org,
+          req,
+          paymentId: getPayment.id,
+          invoiceId: req.body.invoiceId,
+          invoiceAmount,
+          lastIndex,
         });
-        await getClient.save();
+// console.log(getClient);
+        // await getClient.save();
       }
-
+      
       return await payment
-        .deleteOne({ orgId: req.session.orgId, _id: req.body.paymentId })
-        .then(() =>
+        .findOne({ orgId: req.session.orgId, _id: req.body.paymentId })
+        .then((paymentResult) => {
+          paymentResult.isCancelled = true;
+         // paymentResult.save();
           callback(
             {
               status: "success",
               message: "Payment canceled successfully",
             },
             false
-          )
-        )
+          );
+        })
         .catch((err) =>
           callback(null, {
             status: "error",
@@ -197,8 +213,59 @@ module.exports = class Payment {
           })
         );
     } catch (error) {
-      console.log(error);
+    
       return callback(null, error);
     }
   }
+
+ async cancelPaymentForBalance ({
+   req,
+   callback,
+   invoiceAmount,
+   invoicePaidAmount,
+   whose,
+   id,
+   amount,
+   lastIndex,
+   isViaBalance
+ }) {
+  try {
+    console.log("calling 2");
+    let getClient = await getClientVerify({
+      whose,
+      id,
+      req,
+    });
+   
+    if (!getClient || getClient == null)
+      return callback(null,{
+        status: "error",
+        message: "Can't find Vendor or Customer",
+      });
+    if (getClient.status == "error") return callback(null, getClient);
+    
+      getClient = await decreaseTheClientBalanceInOrOut({
+        amount: isViaBalance == undefined ? 0 : amount,
+        invoicePaidAmount,
+        getClient,
+        req,
+        invoiceId: req.body.id,
+        invoiceAmount,
+        lastIndex,
+        isViaBalance,
+      });
+  // console.log(getClient) 
+  //  await getClient.save();
+    return  callback(
+      {
+        status: "success",
+        message: "Invoice cancelled successfully",
+      },
+      false
+    );
+  } catch (error) {
+
+   return callback(null,{status:"error",message:error.message})
+  }
+ }
 };

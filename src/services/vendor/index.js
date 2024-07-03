@@ -37,7 +37,7 @@ module.exports = class Vendor {
        return await services.payment
         .createPayment({
           orgId:req.session.orgId,
-          clientId:vendorResponse._id,
+          id:vendorResponse._id,
           name:vendorResponse.name,
           amount:balance.value,
           mode:"Cash",

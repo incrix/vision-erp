@@ -27,7 +27,7 @@ module.exports = ({ passport, services, log }) => {
 
     router.post("/cancel-invoice", async (req, res) => {
       try {
-        await services.invoice.cancelInvoice({invoiceId:req.body.invoiceId,req,services,callBack:function(err,data){ 
+        await services.invoice.cancelInvoice({id:req.body.id,req,services,callBack:function(err,data){ 
          if(err) return res.json(err);       
          res.json(data);
      }})
@@ -56,6 +56,13 @@ module.exports = ({ passport, services, log }) => {
     } catch (error) {
       res.json({status: 'error', error: error});
     }
+    })
+
+    router.post("/invoice-payment-through-balance",async(req,res) => {
+await services.invoice.paymentThroughCurrentBalance({req,body:req.body,callBack:function(err,data){ 
+  if(err) return res.json(err);       
+  res.json(data);
+}})
     })
 
   return router;

@@ -88,7 +88,7 @@ module.exports = (config) => {
     payment
   };
 
-console.log(1000 > 5);
+
   // router
   app.get("/api/expire", (req, res) => {
     if (!req.session.counters) req.session.counters = 1;

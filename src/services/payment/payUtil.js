@@ -2,11 +2,11 @@ const Vendor = require("../../models/vendor");
 const Customer = require("../../models/customer");
 const Invoice = require("../../models/invoice");
 
-exports.getClientVerify = async ({ whose, clientId, req }) => {
+exports.getClientVerify = async ({ whose, id, req }) => {
   if (whose == "customer") {
     return await Customer.findOne({
       orgId: req.session.orgId,
-      _id: clientId,
+      _id: id,
     }).catch((err) => {
       return {
         status: "error",
@@ -17,7 +17,7 @@ exports.getClientVerify = async ({ whose, clientId, req }) => {
   if (whose == "vendor") {
     return await Vendor.findOne({
       orgId: req.session.orgId,
-      _id: clientId,
+      _id: id,
     }).catch((err) => {
       return {
         status: "error",
@@ -30,25 +30,61 @@ exports.getClientVerify = async ({ whose, clientId, req }) => {
 
 exports.decreaseTheClientBalanceInOrOut = async ({
   amount,
-  type,
+  invoicePaidAmount,
   getClient,
-  documents,
+  paymentId,
+  invoiceId,
+  req,
+  invoiceAmount,
+  lastIndex,
+  isViaBalance
 }) => {
-  if (documents) {
-    await Invoice.findOne({ amount: amount, type });
-  }
-  if (type == "out") {
-    if (getClient.balance.borrow > amount)
-      getClient.balance.borrow = getClient.balance.borrow - amount;
-    else getClient.balance.borrow = amount - getClient.balance.borrow;
-  } else if (type == "in") {
-    if (getClient.balance.gave > amount)
-      getClient.balance.gave = getClient.balance.gave - amount;
-    else getClient.balance.gave = amount - getClient.balance.gave;
-  }
 
-  return getClient;
+// I am unable to change the balance amount in the current balance.
+
+  let balance =  getClient.ledger[getClient.ledger.length - 1].closingBalance ;
+  let closingBalance =  getClient.balance.currentBalance
+ balance = await checkBalance(balance,amount)
+  await getClient.ledger.map((ledger) => {
+    if (ledger.id == paymentId || ledger.id == invoiceId ) {
+
+      ledger.isCancelled = true;
+    }
+  });
+  
+  req.session.countBalance = await checkBalance((req.session.countBalance == undefined ? 0 : req.session.countBalance),amount)
+
+  if (lastIndex && req.session.countBalance == invoicePaidAmount && isViaBalance == undefined) {
+    getClient.ledger[getClient.ledger.length - 1].closingBalance =
+      await checkBalance(
+        getClient.ledger[getClient.ledger.length - 1].closingBalance,
+        (invoiceAmount - invoicePaidAmount)
+      );
+  }
+  else if (isViaBalance !== undefined){ 
+
+    getClient.ledger[getClient.ledger.length - 1].closingBalance =  await checkBalance(
+      getClient.ledger[getClient.ledger.length - 1].closingBalance,
+      invoiceAmount
+    );
+    getClient.balance.currentBalance = await checkBalance(closingBalance,amount)
+  }
+ 
+
+  return await getClient;
 };
+
+function checkBalance(balance, amount) {
+  if (balance > 0) {
+    balance = balance - amount;
+  } else if (balance >= -amount) {
+    balance = amount - Math.abs(balance);
+  } else {
+    balance = Math.abs(balance) - amount;
+    balance = -balance;
+  }
+  return balance;
+}
 
 exports.addBalanceWithInandOut = ({ type, amount, getClient }) => {
   if (type == "in") getClient.balance.gave = getClient.balance.gave + amount;

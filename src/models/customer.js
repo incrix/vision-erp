@@ -83,6 +83,10 @@ const schema = mongoose.Schema(
     ledger: [
       {
         _id: false,
+        isCancelled: {
+          type: Boolean,
+          default: false,
+        },
         id: {
           type: String,
         },
@@ -90,19 +94,19 @@ const schema = mongoose.Schema(
           type: Date,
           default: Date.now(),
         },
-        subTitle:{
+        subTitle: {
           type: String,
         },
         mode: {
           type: String,
-          enum: ["Credit", "Debit", "UPI", "Cash"],
+          enum: ["Net Bank", "Cash", "UPI", "EMI"],
         },
         amount: {
           type: Number,
         },
         status: {
           type: String,
-          enum: ["pending","partially","paid"],
+          enum: ["pending", "partially", "paid"],
         },
         closingBalance: {
           type: Number,

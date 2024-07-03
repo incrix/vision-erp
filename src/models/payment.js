@@ -32,7 +32,7 @@ const schema = mongoose.Schema(
     },
     mode: {
       type: String,
-      enum: ["Cash", "card", "Debit", "UPI"],
+      enum:["Net Bank", "Cash", "UPI", "EMI"],
       required: true,
     },
     type: {
