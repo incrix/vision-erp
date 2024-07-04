@@ -16,7 +16,7 @@ module.exports = ({ passport, services, log }) => {
    } 
 })
 
-router.get('/get-all-cus',async (req,res)=>{
+router.get('/get-all-cus',async (req,res)=> {
     try {
  
        await services.customer.getAllCustomer({req,callBack:function(err,data){ 

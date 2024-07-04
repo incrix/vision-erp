@@ -14,6 +14,7 @@ const router = require("./router/index.js");
 const User = require("./services/user");
 const MailSender = require("./services/email/index.js");
 const { sessionExpire, userIsLogin } = require("./middleware.js");
+const {checkTheInput} = require("./utils/checkTheInput.js")
 const methodOverride = require("method-override");
 const Product = require("./services/product/index.js");
 const Customer = require("./services/customer/index.js");
@@ -96,7 +97,7 @@ module.exports = (config) => {
     console.log(req.session.counters);
     res.send("expire");
   });
-  app.use("/api/", sessionExpire, router({ services, passport, log }));
+  app.use("/api/", sessionExpire,checkTheInput,router({ services, passport, log }));
 
   app.get("/api/user-isLogin", userIsLogin);
 

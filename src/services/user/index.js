@@ -13,6 +13,7 @@ module.exports = class User {
     try {
       const { email } = req.body;
       if (validator.validate(email)) {
+  
         const getUser = await user.findOne({ email });
         if (!getUser) {
           return { status: "error", message: "User does not exist" };

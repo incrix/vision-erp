@@ -1,19 +1,33 @@
 exports.isValidDateFormat = (dateString, format) => {
     let regex;
-  
+ 
     // Define regex patterns for different date formats
     switch (format) {
+
         case 'YYYY-MM-DD':
             regex = /^\d{4}-\d{2}-\d{2}$/;
             break;
-        case 'DD/MM/YYYY':
-            regex = /^\d{2}\/\d{2}\/\d{4}$/;
+        case 'DD-MM-YYYY':
+    
+            regex = /^\d{2}-\d{2}-\d{4}$/;
             break;
         case 'MM-DD-YYYY':
             regex = /^\d{2}-\d{2}-\d{4}$/;
-            break;
+            break
         default:
             return false; // Unsupported format
+
+        // case 'YYYY-MM-DD':
+        //     regex = /^\d{4}-\d{2}-\d{2}$/;
+        //     break;
+        // case 'DD/MM/YYYY':
+        //     regex = /^\d{2}\/\d{2}\/\d{4}$/;
+        //     break;
+        // case 'MM-DD-YYYY':
+        //     regex = /^\d{2}-\d{2}-\d{4}$/;
+        //     break;
+        // default:
+        //     return false; // Unsupported format
     }
   
     // Check if dateString matches the regex
@@ -32,8 +46,8 @@ exports.isValidDateFormat = (dateString, format) => {
             month = parseInt(parts[1], 10) - 1; // months are 0-based in JS
             day = parseInt(parts[2], 10);
             break;
-        case 'DD/MM/YYYY':
-            parts = dateString.split('/');
+        case 'DD-MM-YYYY':
+            parts = dateString.split('-');
             day = parseInt(parts[0], 10);
             month = parseInt(parts[1], 10) - 1;
             year = parseInt(parts[2], 10);

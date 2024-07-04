@@ -21,12 +21,8 @@ exports.sessionExpire = (req, res, next) => {
 
   const date = new Date()
 
-  if(req.body.date !== undefined)
- { 
-  
-  if(isValidDateFormat(req.body.date,'DD/MM/YYYY') == false) return res.json({status:"error",message:"Invalid date format"})
-}
-if(req.session.expire == undefined) return res.json({status:"error",message:'You don`t have authenticated'})
+
+// if(req.session.expire == undefined) return res.json({status:"error",message:'You don`t have authenticated'})
  if(req.session.expire){
   const now = moment(date);
 

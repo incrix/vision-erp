@@ -1,7 +1,10 @@
 const customer = require("../../models/customer");
 const { getDateCreated } = require("../../utils/createDate");
 const { generatePaymentId } = require("../../utils/generateID");
-const {isValidDateFormat} = require("../../utils/checkDateFormat")
+const { isValidDateFormat } = require("../../utils/checkDateFormat");
+
+const {isString, isNumber,isEmail} = require("../../utils/checkTheInput")
+const Logger = require("bunyan");
 module.exports = class Customer {
   async createCustomer({
     req,
@@ -16,8 +19,10 @@ module.exports = class Customer {
     balance,
   }) {
     try {
+    
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
-     
+ ;
+       
       return await customer
         .create({
           type,
@@ -54,21 +59,20 @@ module.exports = class Customer {
                 amount: balance.value,
                 mode: "Cash",
                 whose: "customer",
-                date:req.body.date,
+                date: req.body.date,
                 type: balance.type,
               })
               .then(async (getPayResult) => {
-               
                 if (getPayResult.status == "error") return getPayResult;
                 customerResponse.ledger.push({
                   id: getPayResult.id,
-                  subTitle:"Balance",
+                  subTitle: "Balance",
                   mode: "Cash",
                   amount: balance.value,
                   closingBalance:
                     balance.type == "in" ? balance.value : -balance.value,
                 });
-               await customerResponse.save()
+                await customerResponse.save();
                 return {
                   status: "success",
                   message: "customer created successfully",
@@ -88,12 +92,11 @@ module.exports = class Customer {
           return { status: "error", message: "can't create customer" };
         });
     } catch (error) {
+
       return { status: "error", message: "something went wrong" };
     }
   }
-  pushLergerCustomer () {
-
-  }
+  pushLergerCustomer() {}
   getAllCustomer({ req, callBack }) {
     return customer
       .find({ orgId: req.session.orgId })

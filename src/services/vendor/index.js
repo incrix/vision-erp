@@ -13,6 +13,7 @@ module.exports = class Vendor {
     balance,
   }) {
     const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
+
     return await vendor
       .create({
         name,
@@ -37,7 +38,7 @@ module.exports = class Vendor {
        return await services.payment
         .createPayment({
           orgId:req.session.orgId,
-          id:vendorResponse._id,
+          clientId:vendorResponse._id,
           name:vendorResponse.name,
           amount:balance.value,
           mode:"Cash",
