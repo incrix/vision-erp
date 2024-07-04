@@ -16,6 +16,20 @@ exports.checkTheInput = (req, res, next) => {
           return res
             .status(400)
             .json({ status: "error", message: "Invalid date format" });
+      if (key == "totalPrice")
+        if (typeof body[key] !== "number") {
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid ${key}`,
+          });
+        }
+      if (key == "paidAmount")
+        if (typeof body[key] !== "number") {
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid ${key}`,
+          });
+        }
       if (key == "email")
         if (!validator.validate(body[key]))
           return res.status(400).json({
@@ -29,6 +43,74 @@ exports.checkTheInput = (req, res, next) => {
             message: `Please enter valid ${key}`,
           });
         }
+      // discount
+      if (key == "discount") {
+        if (typeof body[key].type !== "string")
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid type`,
+          });
+        if (typeof body[key].value !== "number")
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid value`,
+          });
+      }
+      // delivery
+      if (key == "delivery") {
+        if (typeof body[key].type !== "string")
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid type`,
+          });
+        if (typeof body[key].value !== "number")
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid value`,
+          });
+      }
+      // transationDetails
+      if (key == "transationDetails") {
+        if (typeof body[key].type !== "string")
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid type`,
+          });
+        if (typeof body[key].totalPrice !== "number")
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid totalPrice`,
+          });
+      }
+      // additionalCharges
+      if (key == "additionalCharges") {
+        if (body[key].package) {
+          if (typeof body[key].package.type !== "string")
+            return res.status(400).json({
+              status: "error",
+              message: `Please enter valid type`,
+            });
+          if (typeof body[key].package.value !== "number")
+            return res.status(400).json({
+              status: "error",
+              message: `Please enter valid value`,
+            });
+        }
+        if (body[key].delivery) {
+          if (typeof body[key].delivery.type !== "string")
+            return res.status(400).json({
+              status: "error",
+              message: `Please enter valid type`,
+            });
+          if (typeof body[key].delivery.value !== "number")
+            return res.status(400).json({
+              status: "error",
+              message: `Please enter valid value`,
+            });
+        }
+      }
+
+      // company details
       if (key == "companyDetails") {
         if (typeof body[key].companyName !== "string")
           return res.status(400).json({
@@ -41,6 +123,7 @@ exports.checkTheInput = (req, res, next) => {
             message: "Company GSTIN should be a text",
           });
       }
+      // balance
       if (key == "balance") {
         if (
           typeof body[key].value !== "number" &&
@@ -56,6 +139,7 @@ exports.checkTheInput = (req, res, next) => {
             message: `Type should be a text`,
           });
       }
+      // billing Address
       if (key == "billingAddress") {
         if (
           typeof body[key].address1 !== "string" &&
@@ -95,6 +179,7 @@ exports.checkTheInput = (req, res, next) => {
             message: `city should be a text`,
           });
       }
+      // shipping Address
       if (key == "shippingAddress") {
         for (var i = 0; i < body[key].length; i++) {
           {
