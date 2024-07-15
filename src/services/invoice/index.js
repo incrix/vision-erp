@@ -80,8 +80,8 @@ module.exports = class Invoice {
                   ? undefined
                   : getCustomer.companyDetails,
             },
-            transationDetails: {
-              mode: body.type,
+            transactionDetails: {
+              mode: body.transactionDetails.type,
             },
             items: body.items,
             additionalCharges: {
@@ -152,7 +152,6 @@ module.exports = class Invoice {
                   getCustomer,
                 });
 
-                //  await getCustomer.save();
               })();
             });
             if (body.paidAmount > 0)
@@ -162,7 +161,7 @@ module.exports = class Invoice {
                   clientId: getCustomer._id,
                   name: getCustomer.name,
                   amount: body.paidAmount,
-                  mode: body.transationDetails.type,
+                  mode: body.transactionDetails.type,
                   date: req.body.date,
                   type: "in",
                   whose: "customer",
@@ -334,6 +333,7 @@ module.exports = class Invoice {
 
       getInvoice.status = "cancelled";
       req.session.countBalance = 0;
+      
       // await getInvoice.save();
       callBack(
         { status: "success", message: "invoice cancelled successfully" },
@@ -525,14 +525,14 @@ module.exports = class Invoice {
 
       let balance = 0 + Math.abs(getClient.balance.currentBalance);
 
-      if (
-        balance < getInvoice.totalPrice - getInvoice.paidAmount ||
-        balance < amount || getClient.balance.currentBalance > 0
-      )
-        return callBack(null, {
-          status: "error",
-          message: "You don't have enough balance",
-        });
+      // if (
+      //   balance < getInvoice.totalPrice - getInvoice.paidAmount ||
+      //   balance < amount || getClient.balance.currentBalance > 0
+      // )
+      //   return callBack(null, {
+      //     status: "error",
+      //     message: "You don't have enough balance",
+      //   });
       getInvoice.status = await getAmountStatus({
         totalPrice: getInvoice.totalPrice,
         paidAmount: getInvoice.paidAmount + amount,
@@ -543,7 +543,7 @@ module.exports = class Invoice {
           invoice.status = getInvoice.status;
         }
       });
-      getInvoice.paymentTransactions.push({ type: "balance", amount: -amount });
+      getInvoice.paymentTransactions.push({ type: "balance", amount: amount });
       // add the payment amount in the invoice paid amount
       getInvoice.paidAmount = getInvoice.paidAmount + amount;
       // to add amount in client cloing balance
@@ -552,6 +552,7 @@ module.exports = class Invoice {
         balance: getClient.balance.currentBalance,
         paidAmount: amount,
       });
+    
       await getClient.save();
       await getInvoice.save();
 

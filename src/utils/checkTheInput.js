@@ -16,6 +16,14 @@ exports.checkTheInput = (req, res, next) => {
           return res
             .status(400)
             .json({ status: "error", message: "Invalid date format" });
+      // id
+      if (key == "id")
+        if (typeof body[key] !== "string") {
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid ${key}`,
+          });
+        }
       if (key == "totalPrice")
         if (typeof body[key] !== "number") {
           return res.status(400).json({
@@ -23,6 +31,7 @@ exports.checkTheInput = (req, res, next) => {
             message: `Please enter valid ${key}`,
           });
         }
+      // paidAmount
       if (key == "paidAmount")
         if (typeof body[key] !== "number") {
           return res.status(400).json({
@@ -30,12 +39,30 @@ exports.checkTheInput = (req, res, next) => {
             message: `Please enter valid ${key}`,
           });
         }
+      // type
+      if (key == "type")
+        if (typeof body[key] !== "string") {
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid ${key}`,
+          });
+        }
+      // amount
+      if (key == "amount")
+        if (typeof body[key] !== "number") {
+          return res.status(400).json({
+            status: "error",
+            message: `Please enter valid ${key}`,
+          });
+        }
+      // email
       if (key == "email")
         if (!validator.validate(body[key]))
           return res.status(400).json({
             status: "error",
             message: `Please enter a valid ${key} address`,
           });
+      // Name or Phone
       if (key == "name" || key == "phone")
         if (typeof body[key] !== "string") {
           return res.status(400).json({
@@ -69,8 +96,8 @@ exports.checkTheInput = (req, res, next) => {
             message: `Please enter valid value`,
           });
       }
-      // transationDetails
-      if (key == "transationDetails") {
+      // transactionDetails
+      if (key == "transactionDetails") {
         if (typeof body[key].type !== "string")
           return res.status(400).json({
             status: "error",

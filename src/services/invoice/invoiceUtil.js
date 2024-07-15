@@ -117,15 +117,16 @@ const addCustomerBalance = ({ balance, paidAmount }) => {
 };
 
 exports.addincreaseOrdecreaseBalance =({ balance, paidAmount }) => {
-  if (balance > 0) {
-    return balance - paidAmount;
-  }
-  if (balance >= -paidAmount){
-    balance = paidAmount - Math.abs(balance)
-  }
-  else {
-    balance = Math.abs(balance) - paidAmount;
-    balance = -balance;
-  }
-  return balance 
+  return balance + paidAmount;
+  // if (balance > 0) {
+  //   return  balance - paidAmount;
+  // }
+  // if (balance >= -paidAmount){
+  //   balance = paidAmount - Math.abs(balance)
+  // }
+  // else {
+  //   balance = Math.abs(balance) - paidAmount;
+  //   balance = -balance;
+  // }
+  // return balance 
 };

@@ -63,7 +63,7 @@ const schema = mongoose.Schema(
       },
     },
 
-    transationDetails: {
+    transactionDetails: {
       mode: {
         type: String,
         enum: ["Net Bank", "Cash", "UPI", "EMI"],

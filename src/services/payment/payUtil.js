@@ -53,7 +53,7 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   });
   
   req.session.countBalance = await checkBalance((req.session.countBalance == undefined ? 0 : req.session.countBalance),amount)
-
+console.log(req.session.countBalance);
   if (lastIndex && req.session.countBalance == invoicePaidAmount && isViaBalance == undefined) {
     getClient.ledger[getClient.ledger.length - 1].closingBalance =
       await checkBalance(

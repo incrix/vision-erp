@@ -78,11 +78,6 @@ module.exports = class Payment {
         mode: req.body.mode,
         whose: req.body.whose,
         paymentDate: req.body.date,
-        // timestamps: {
-        //   date: getDate,
-        //   time: getTime,
-        //   dateMilliseconds: getDateMilliseconds,
-        // },
         type: req.body.type,
         description:
           req.body.description == undefined ? "" : req.body.description,
@@ -148,7 +143,7 @@ module.exports = class Payment {
     invoicePaidAmount,
   }) {
     try {
-      console.log("calling 1");
+ 
       const getPayment = await payment.findOne({
         orgId: req.session.orgId,
         _id: req.body.paymentId,
@@ -189,7 +184,7 @@ module.exports = class Payment {
           invoiceAmount,
           lastIndex,
         });
-// console.log(getClient);
+console.log(getClient);
         // await getClient.save();
       }
       
@@ -230,7 +225,7 @@ module.exports = class Payment {
    isViaBalance
  }) {
   try {
-    console.log("calling 2");
+    
     let getClient = await getClientVerify({
       whose,
       id,
@@ -254,7 +249,7 @@ module.exports = class Payment {
         lastIndex,
         isViaBalance,
       });
-  // console.log(getClient) 
+  console.log(getClient) 
   //  await getClient.save();
     return  callback(
       {
