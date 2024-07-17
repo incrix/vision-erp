@@ -184,15 +184,21 @@ module.exports = class Payment {
           invoiceAmount,
           lastIndex,
         });
-console.log(getClient);
-        // await getClient.save();
+    //  console.log(getClient);
+        await getClient.save();
       }
-      
+      return  callback(
+        {
+          status: "success",
+          message: "Invoice canceled successfully",
+        },
+        false
+      );
       return await payment
         .findOne({ orgId: req.session.orgId, _id: req.body.paymentId })
         .then((paymentResult) => {
           paymentResult.isCancelled = true;
-         // paymentResult.save();
+           paymentResult.save();
           callback(
             {
               status: "success",
@@ -207,6 +213,7 @@ console.log(getClient);
             message: "couldn't delete payment",
           })
         );
+    
     } catch (error) {
     
       return callback(null, error);
@@ -248,9 +255,9 @@ console.log(getClient);
         invoiceAmount,
         lastIndex,
         isViaBalance,
-      });
-  console.log(getClient) 
-  //  await getClient.save();
+      })
+  // console.log(getClient) 
+   await getClient.save();
     return  callback(
       {
         status: "success",

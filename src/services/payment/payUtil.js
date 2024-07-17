@@ -37,53 +37,69 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   req,
   invoiceAmount,
   lastIndex,
-  isViaBalance
+  isViaBalance,
 }) => {
+  // I am unable to change the balance amount in the current balance.
 
-// I am unable to change the balance amount in the current balance.
 
-  let balance =  getClient.ledger[getClient.ledger.length - 1].closingBalance ;
-  let closingBalance =  getClient.balance.currentBalance
- balance = await checkBalance(balance,amount)
+  let closingBalance = getClient.balance.currentBalance;
+
   await getClient.ledger.map((ledger) => {
-    if (ledger.id == paymentId || ledger.id == invoiceId ) {
-
+    if (ledger.id == paymentId || ledger.id == invoiceId) {
       ledger.isCancelled = true;
     }
   });
-  
-  req.session.countBalance = await checkBalance((req.session.countBalance == undefined ? 0 : req.session.countBalance),amount)
-console.log(req.session.countBalance);
-  if (lastIndex && req.session.countBalance == invoicePaidAmount && isViaBalance == undefined) {
+
+  if (
+    // lastIndex &&
+    // req.session.countBalance == invoicePaidAmount &&
+    isViaBalance == undefined
+  ) {
     getClient.ledger[getClient.ledger.length - 1].closingBalance =
       await checkBalance(
-        getClient.ledger[getClient.ledger.length - 1].closingBalance,
-        (invoiceAmount - invoicePaidAmount)
+        closingBalance,
+        amount
       );
-  }
-  else if (isViaBalance !== undefined){ 
-
-    getClient.ledger[getClient.ledger.length - 1].closingBalance =  await checkBalance(
-      getClient.ledger[getClient.ledger.length - 1].closingBalance,
-      invoiceAmount
-    );
-    getClient.balance.currentBalance = await checkBalance(closingBalance,amount)
-  }
  
+    getClient.balance.currentBalance = await checkBalance(
+      closingBalance,
+      amount
+    );
+  } else if (isViaBalance !== undefined) {
+    getClient.ledger[getClient.ledger.length - 1].closingBalance =
+      await checkBalance(
+        closingBalance,
+        amount
+      );
+ 
+    getClient.balance.currentBalance = await checkBalance(
+      closingBalance,
+      amount
+    );
+  }
 
   return await getClient;
 };
 
 function checkBalance(balance, amount) {
   if (balance > 0) {
-    balance = balance - amount;
-  } else if (balance >= -amount) {
-    balance = amount - Math.abs(balance);
-  } else {
-    balance = Math.abs(balance) - amount;
-    balance = -balance;
+    return balance - amount;
   }
-  return balance;
+  return balance - amount;
+  // console.log(balance, amount);
+  //   if (balance > 0) {
+  //     balance = balance - amount;
+  //   }
+  //   else if (balance < 0) {
+  //     balance =  amount - balance ;
+  //   }
+  //   //  else if (balance >= -amount) {
+  //   //   balance = amount - Math.abs(balance);
+  //   // } else {
+  //   //   balance = Math.abs(balance) - amount;
+  //   //   balance = -balance;
+  //   // }
+  //   return balance;
 }
 
 exports.addBalanceWithInandOut = ({ type, amount, getClient }) => {

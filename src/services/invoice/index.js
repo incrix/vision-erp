@@ -255,6 +255,8 @@ module.exports = class Invoice {
           message: "Invoice is already cancelled",
         });
 
+        
+
       if (getInvoice.paymentTransactions.length > 0) {
         for (let i = 0; i < getInvoice.paymentTransactions.length; i++) {
           const getPromise = await new Promise((resolve, reject) => {
@@ -330,11 +332,9 @@ module.exports = class Invoice {
         if (getPromise.status == "error" || getPromise == null)
           return callBack(null, getPromise);
       }
-
+// change status to "cancelled"
       getInvoice.status = "cancelled";
-      req.session.countBalance = 0;
-      
-      // await getInvoice.save();
+       await getInvoice.save();
       callBack(
         { status: "success", message: "invoice cancelled successfully" },
         false
@@ -523,16 +523,7 @@ module.exports = class Invoice {
           message: "Couldn't find client ",
         });
 
-      let balance = 0 + Math.abs(getClient.balance.currentBalance);
 
-      // if (
-      //   balance < getInvoice.totalPrice - getInvoice.paidAmount ||
-      //   balance < amount || getClient.balance.currentBalance > 0
-      // )
-      //   return callBack(null, {
-      //     status: "error",
-      //     message: "You don't have enough balance",
-      //   });
       getInvoice.status = await getAmountStatus({
         totalPrice: getInvoice.totalPrice,
         paidAmount: getInvoice.paidAmount + amount,
