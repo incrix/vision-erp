@@ -1,5 +1,6 @@
 const vendor = require("../../models/vendor");
-const { getDateCreated,} = require('../../utils/createDate')
+const { getDateCreated } = require("../../utils/createDate");
+const { generatePaymentId } = require("../../utils/generateID");
 module.exports = class Vendor {
   async createVendor({
     req,
@@ -9,7 +10,6 @@ module.exports = class Vendor {
     phone,
     companyDetails,
     billingAddress,
-    shippingAddress,
     balance,
   }) {
     const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
@@ -17,55 +17,66 @@ module.exports = class Vendor {
     return await vendor
       .create({
         name,
-        timestamps:{
-          date: getDate,
-          time: getTime,
-          dateMilliseconds: getDateMilliseconds
-        },
-        orgId:req.session.orgId,
+        // timestamps: {
+        //   date: getDate,
+        //   time: getTime,
+        //   dateMilliseconds: getDateMilliseconds,
+        // },
+        orgId: req.session.orgId,
         email,
         phone,
         companyDetails,
         billingAddress,
-        shippingAddress,
-        balance:{
-          borrow:balance.type =='out' ? balance.value : 0,
-          gave:balance.type =='in' ? balance.value : 0,
-        }
+        balance: {
+          openingBalance:
+            balance.type == "out" ? balance.value : -balance.value, //Credit or out   == you pay the vendor && green
+          currentBalance: balance.type == "in" ? -balance.value : balance.value, // Debit or in == vendor pay you && red
+        },
       })
-      .then( async (vendorResponse) =>{
-        if(balance.value > 0) 
-       return await services.payment
-        .createPayment({
-          orgId:req.session.orgId,
-          clientId:vendorResponse._id,
-          name:vendorResponse.name,
-          amount:balance.value,
-          mode:"Cash",
-          whose:"vendor",
-          timestamps:{
-            date: getDate,
-            time: getTime,
-            dateMilliseconds: getDateMilliseconds
-          },
-          type:balance.type,
-        })
-        .then((getPayResult) => {
-         if(getPayResult.status == "error") return getPayResult
-          return {
-            status: "success",
-            message: "vendor created successfully",
-          };
-        }) .catch((error) => {
-          console.log(error);
-          return { status: "error", message: "can't create payment" };
-        });
+      .then(async (vendorResponse) => {
+        if (balance.value > 0)
+          return await services.payment
+            .createPayment({
+              orgId: req.session.orgId,
+              clientId: vendorResponse._id,
+              id: await generatePaymentId({
+                orgId: req.session.orgID,
+                type: balance.type,
+              }),
+              name: vendorResponse.name,
+              amount: balance.value,
+              mode: "Cash",
+              whose: "vendor",
+              date: req.body.date,
+              type: balance.type,
+            })
+            .then(async (getPayResult) => {
+              if (getPayResult.status == "error") return getPayResult;
+              vendorResponse.ledger.push({
+                id: getPayResult.id,
+                subTitle: "Balance",
+                mode: "Cash",
+                amount: balance.value,
+                closingBalance:
+                  balance.type == "out" ? balance.value : -balance.value,
+              })
+              await vendorResponse.save();
+              return {
+                status: "success",
+                message: "vendor created successfully",
+              };
+            })
+            .catch((error) => {
+              console.log(error);
+              return { status: "error", message: "can't create payment" };
+            });
         return {
           status: "success",
           message: "vendor created successfully",
         };
-    })
+      })
       .catch((error) => {
+        console.log(error);
         return { status: "error", message: "can't create vendor" };
       });
   }
@@ -82,7 +93,7 @@ module.exports = class Vendor {
         callback(
           {
             status: "success",
-            message: "get vendor successfully",
+            message: "Get vendor successfully",
             data: vendorResponse,
           },
           false
@@ -92,6 +103,5 @@ module.exports = class Vendor {
         callback(null, error);
         return { status: "error", message: "get vendor failed" };
       });
-      
   }
 };

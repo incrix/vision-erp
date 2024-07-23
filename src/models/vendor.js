@@ -8,7 +8,9 @@ const schema = mongoose.Schema(
     email: {
       type: String,
     },
-
+    phone: {
+      type: String,
+    },
     orgId:{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Org"
@@ -40,26 +42,6 @@ const schema = mongoose.Schema(
         type: String,
       },
     },
-    shippingAddress: [
-      {
-        address1: {
-          type: String,
-        },
-        address2: {
-          type: String,
-        },
-        city: {
-          type: String,
-        },
-        state: {
-          type: String,
-        },
-        zipCode: {
-          type: String,
-        },
-        _id:false,
-      },
-    ],
     timestamps: {
       date: {
         type: String,
@@ -71,16 +53,51 @@ const schema = mongoose.Schema(
         type: Number,
       },
     },
-    balance:{
-      borrow:{
-        type:Number,
-        default:0
+    ledger: [
+      {
+        _id: false,
+        isCancelled: {
+          type: Boolean,
+          default: false,
+        },
+        id: {
+          type: String,
+        },
+        createAt: {
+          type: Date,
+          default: Date.now(),
+        },
+        subTitle: {
+          type: String,
+        },
+        mode: {
+          type: String,
+          enum: ["Net Bank", "Cash", "UPI", "EMI"],
+        },
+        amount: {
+          type: Number,
+        },
+        status: {
+          type: String,
+          enum: ["pending", "partially", "paid"],
+        },
+        closingBalance: {
+          type: Number,
+        },
       },
-      gave:{
-        type:Number,
-        default:0
-      }
-    }
+    ],
+    //Credit  == you pay the customer
+    // Debit == customer pay you
+    balance: {
+      openingBalance: {
+        type: Number,
+        default: 0,
+      },
+      currentBalance: {
+        type: Number,
+        default: 0,
+      },
+    },
   },
   { timestamps: true, versionKey: false }
 );

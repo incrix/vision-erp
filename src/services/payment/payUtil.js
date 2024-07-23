@@ -30,13 +30,9 @@ exports.getClientVerify = async ({ whose, id, req }) => {
 
 exports.decreaseTheClientBalanceInOrOut = async ({
   amount,
-  invoicePaidAmount,
   getClient,
   paymentId,
-  invoiceId,
-  req,
-  invoiceAmount,
-  lastIndex,
+  docId,
   isViaBalance,
 }) => {
   // I am unable to change the balance amount in the current balance.
@@ -45,7 +41,7 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   let closingBalance = getClient.balance.currentBalance;
 
   await getClient.ledger.map((ledger) => {
-    if (ledger.id == paymentId || ledger.id == invoiceId) {
+    if (ledger.id == paymentId || ledger.id == docId) {
       ledger.isCancelled = true;
     }
   });

@@ -20,7 +20,6 @@ exports.getDateCreated = () => {
 
 exports.getAmountStatus = ({
   totalPrice,
-
   paidAmount,
 }) => {
   if (totalPrice == paidAmount) {
@@ -48,7 +47,6 @@ exports.createClientBalanceForInvoice = ({
   //     Math.abs(getCustomer.balance.currentBalance) - totalAmount;
   //   getCustomer.balance.currentBalance = -getCustomer.balance.currentBalance;
   // }
-
   let balanceValue =
     getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance;
   if (balanceValue > 0) {

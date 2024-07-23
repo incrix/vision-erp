@@ -3,7 +3,7 @@ const { getDateCreated } = require("../../utils/createDate");
 const { generatePaymentId } = require("../../utils/generateID");
 const { isValidDateFormat } = require("../../utils/checkDateFormat");
 
-const {isString, isNumber,isEmail} = require("../../utils/checkTheInput")
+const { isString, isNumber, isEmail } = require("../../utils/checkTheInput");
 const Logger = require("bunyan");
 module.exports = class Customer {
   async createCustomer({
@@ -19,19 +19,16 @@ module.exports = class Customer {
     balance,
   }) {
     try {
-    
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
- ;
-       
       return await customer
         .create({
           type,
           name,
-          timestamps: {
-            date: getDate,
-            time: getTime,
-            dateMilliseconds: getDateMilliseconds,
-          },
+          // timestamps: {
+          //   date: getDate,
+          //   time: getTime,
+          //   dateMilliseconds: getDateMilliseconds,
+          // },
           orgId: req.session.orgId,
           email,
           phone,
@@ -40,9 +37,9 @@ module.exports = class Customer {
           shippingAddress,
           balance: {
             openingBalance:
-              balance.type == "in" ? balance.value : -balance.value, //Credit or out   == you pay the customer && green
+              balance.type == "out" ? balance.value : -balance.value, //Credit or out   == you pay the customer && green
             currentBalance:
-              balance.type == "out" ? -balance.value : balance.value, // Debit or in == customer pay you && red
+              balance.type == "in" ? -balance.value : balance.value, // Debit or in == customer pay you && red
           },
         })
         .then(async (customerResponse) => {
@@ -70,8 +67,8 @@ module.exports = class Customer {
                   mode: "Cash",
                   amount: balance.value,
                   closingBalance:
-                    balance.type == "in" ? balance.value : -balance.value,
-                });
+                    balance.type == "out" ? balance.value : -balance.value,
+                })
                 await customerResponse.save();
                 return {
                   status: "success",
@@ -92,15 +89,23 @@ module.exports = class Customer {
           return { status: "error", message: "can't create customer" };
         });
     } catch (error) {
-
       return { status: "error", message: "something went wrong" };
     }
   }
-  pushLergerCustomer() {}
+
   getAllCustomer({ req, callBack }) {
     return customer
       .find({ orgId: req.session.orgId })
-      .then((response) => callBack(response, false))
+      .then((response) =>
+        callBack(
+          {
+            status: "success",
+            message: "Get All Customer Successfully",
+            data: response,
+          },
+          false
+        )
+      )
       .catch((error) =>
         callBack(null, {
           status: "error",

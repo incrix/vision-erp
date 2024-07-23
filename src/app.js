@@ -21,6 +21,7 @@ const Customer = require("./services/customer/index.js");
 const Vendor = require("./services/vendor/index.js");
 const Invoice = require("./services/invoice/index.js");
 const Payment = require("./services/payment/index.js");
+const Purchase = require("./services/purchase/index.js");
 
 
 module.exports = (config) => {
@@ -78,6 +79,7 @@ module.exports = (config) => {
   const customer = new Customer();
   const invoice = new Invoice();
   const payment = new Payment()
+  const purchase = new Purchase()
   const services = {
     user,
     mailSender,
@@ -86,7 +88,8 @@ module.exports = (config) => {
     vendor,
     getConnection,
     invoice,
-    payment
+    payment,
+    purchase
   };
 
   // router

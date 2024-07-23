@@ -178,4 +178,11 @@ module.exports = class Product {
       return { status: "error", message: "something went wrong" };
     }
   }
+ async isCallProductQuantity ({callback,req}) {
+ try {
+  
+ } catch (error) {
+  callback(null,{status: "error", message: error.message})
+ }
+  }
 };

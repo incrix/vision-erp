@@ -38,6 +38,12 @@ exports.genereateInvoiceId = (indexCount) =>{
     if(indexCount.length+1 <= 9) return `#INV-0${indexCount.length+1}`
     else return `#INV-${indexCount.length+1}`
 }
+exports.genereatePurchase = (indexCount) =>{
+ 
+    if(indexCount.length == 0) return `#PUC-0${++indexCount.length}`
+    if(indexCount.length+1 <= 9) return `#PUC-0${indexCount.length+1}`
+    else return `#PUC-${indexCount.length+1}`
+}
 
 exports.generateProductID = () =>{
     let id = '';

@@ -44,6 +44,7 @@ module.exports = class Payment {
         timestamps,
       })
       .then((response) => {
+    
         return {
           status: "success",
           message: "Create payment successfully",
@@ -92,7 +93,7 @@ module.exports = class Payment {
               type: req.body.type,
             });
 
-            getClient.save();
+           await getClient.save();
           }
           return await callback(getPayResult);
         })
@@ -137,10 +138,10 @@ module.exports = class Payment {
 
   async cancelPayment({
     req,
-    invoiceAmount,
+    totalPrice,
     lastIndex,
     callback,
-    invoicePaidAmount,
+    paidAmount,
   }) {
     try {
  
@@ -154,18 +155,20 @@ module.exports = class Payment {
           status: "error",
           message: "Payment not found",
         });
-
+console.log(getPayment);
       let getClient = await getClientVerify({
         whose: getPayment.whose,
         id: getPayment.clientId,
         req,
       });
-      if (getClient.status == "error") return callback(null, getClient);
       if (!getClient || getClient == null)
         return callback(null,{
           status: "error",
           message: "Can't find Vendor or Customer",
         });
+      
+      if (getClient.status == "error") return callback(null, getClient);
+    
 
       if (getPayment.isCancelled)
         return callback(null, {
@@ -176,15 +179,15 @@ module.exports = class Payment {
       if (getPayment.amount > 0 && getPayment.isCancelled == false) {
         getClient = await decreaseTheClientBalanceInOrOut({
           amount: getPayment.amount,
-          invoicePaidAmount,
+          paidAmount,
           getClient,
           req,
           paymentId: getPayment.id,
-          invoiceId: req.body.invoiceId,
-          invoiceAmount,
+          docId: req.body.docId, // its created from manually so dont confuse
+          totalPrice,
           lastIndex,
         });
-    //  console.log(getClient);
+      // console.log(getClient);
         await getClient.save();
       }
       return  callback(
@@ -215,7 +218,7 @@ module.exports = class Payment {
         );
     
     } catch (error) {
-    
+    console.log(error);
       return callback(null, error);
     }
   }
@@ -224,7 +227,7 @@ module.exports = class Payment {
    req,
    callback,
    invoiceAmount,
-   invoicePaidAmount,
+   paidAmount,
    whose,
    id,
    amount,
@@ -248,16 +251,17 @@ module.exports = class Payment {
     
       getClient = await decreaseTheClientBalanceInOrOut({
         amount: isViaBalance == undefined ? 0 : amount,
-        invoicePaidAmount,
+        paidAmount,
         getClient,
         req,
-        invoiceId: req.body.id,
+        docId: req.body.docId,
         invoiceAmount,
         lastIndex,
         isViaBalance,
       })
-  // console.log(getClient) 
+  //  console.log(getClient) 
    await getClient.save();
+
     return  callback(
       {
         status: "success",

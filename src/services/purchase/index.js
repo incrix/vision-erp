@@ -1,26 +1,29 @@
-const invoice = require("../../models/invoice");
-const Customer = require("../../models/customer");
-const { genereateInvoiceId } = require("../../utils/generateID");
+const purchase = require("../../models/purchase");
+
+
+// const invoice = require("../../models/invoice");
+const Vendor = require("../../models/vendor");
+const { genereatePurchase } = require("../../utils/generateID");
 const {
   getPersentageAmount,
   getAmountStatus,
-  createClientBalanceForInvoice,
+  createClientBalanceForPurchase,
   createClientBalanceForPayment,
   addincreaseOrdecreaseBalance,
-} = require("./invoiceUtil");
+} = require("./purchaseUtil");
 
 const { getDateCreated } = require("../../utils/createDate");
-const Payment = require("../../models/payment");
-module.exports = class Invoice {
-  async createInvoice({ body, req, callBack, services }) {
+
+module.exports = class Purchase {
+  async createPurchase({ body, req, callBack, services }) {
     try {
-      const cusID = body.cusId;
-      const sendAllCusID = async (callBack) => {
+      const venID = body.venID;
+      const sendAllvenID = async (callBack) => {
         let isCallBack = true;
-        for (let i = 0; i < cusID.length; i++) {
-          const getValue = await this.createInvoiceOneByOne({
+        for (let i = 0; i < venID.length; i++) {
+          const getValue = await this.createPurchaseOneByOne({
             body,
-            cusID: cusID[i],
+            venID: venID[i],
             req,
             callBack,
             services,
@@ -34,24 +37,24 @@ module.exports = class Invoice {
           callBack(
             {
               status: "success",
-              message: "Invoice Created Successfully",
+              message: "Purchase Created Successfully",
             },
             false
           );
       };
-      await sendAllCusID(callBack);
+      await sendAllvenID(callBack);
     } catch (error) {
       console.log(error);
-      callBack(null, { status: "error", message: "Can't Create Invoice" });
+      callBack(null, { status: "error", message: "Can't Create Purchase" });
     }
   }
 
-  async createInvoiceOneByOne({ body, cusID, req, callBack, services }) {
+  async createPurchaseOneByOne({ body, venID, req, callBack, services }) {
     return new Promise(async (resolve, reject) => {
       (async () => {
-        const invoicecount = await invoice.find({ orgId: req.session.orgId });
-        const invoiceId = await genereateInvoiceId(invoicecount);
-        let getCustomer = await Customer.findOne({ _id: cusID });
+        const purchasecount = await purchase.find({ orgId: req.session.orgId });
+        const purchaseId = await genereatePurchase(purchasecount);
+        let getVendor = await Vendor.findOne({ _id: venID });
 
         if (body.totalPrice < body.paidAmount)
           return resolve({
@@ -59,26 +62,27 @@ module.exports = class Invoice {
             message: "The Incorrect Paid Amount",
           });
 
-        if (!getCustomer)
-          return resolve({ status: "error", message: "Customer Not Found" });
-        return await invoice
+        if (!getVendor)
+          return resolve({ status: "error", message: "vendor Not Found" });
+        console.log(getVendor);
+        return await purchase
           .create({
             orgId: req.session.orgId,
             userId: req.session.userId,
-            id: invoiceId,
-            customerDetails: {
-              customerName: getCustomer.name,
-              cusID: getCustomer._id,
-              phone: getCustomer.phone == undefined ? "" : getCustomer.phone,
-              email: getCustomer.email === undefined ? "" : getCustomer.email,
+            id: purchaseId,
+            vendorDetails: {
+              vendorName: getVendor.name,
+              venID: getVendor._id,
+              phone: getVendor.phone == undefined ? "" : getVendor.phone,
+              email: getVendor.email === undefined ? "" : getVendor.email,
               billingAddress:
-                getCustomer.billingAddress == undefined
+                getVendor.billingAddress == undefined
                   ? undefined
-                  : getCustomer.billingAddress,
+                  : getVendor.billingAddress,
               companyDetails:
-                getCustomer.companyDetails == undefined
+                getVendor.companyDetails == undefined
                   ? undefined
-                  : getCustomer.companyDetails,
+                  : getVendor.companyDetails,
             },
             transactionDetails: {
               mode: body.transactionDetails.type,
@@ -135,21 +139,21 @@ module.exports = class Invoice {
               tax: body.tax == undefined || "" ? null : body.tax,
             },
             status: getAmountStatus({
-              cusBalance: getCustomer.balance,
+              cusBalance: getVendor.balance,
               totalPrice: body.totalPrice,
               paidAmount: body.paidAmount,
               disValue: body.discount.value,
             }),
             date: req.body.date,
           })
-          .then(async (getInvoiceResult) => {
+          .then(async (getPurchaseResult) => {
             new Promise((resolve, reject) => {
               (async () => {
-                getCustomer = await createClientBalanceForInvoice({
+                getVendor = await createClientBalanceForPurchase({
                   paidAmount: body.paidAmount,
                   totalAmount: body.totalPrice,
-                  invoice: getInvoiceResult,
-                  getCustomer,
+                  purchase: getPurchaseResult,
+                  getVendor,
                 });
 
               })();
@@ -158,119 +162,121 @@ module.exports = class Invoice {
               return await services.payment
                 .createPayment({
                   orgId: req.session.orgId,
-                  clientId: getCustomer._id,
-                  name: getCustomer.name,
+                  clientId: getVendor._id,
+                  name: getVendor.name,
                   amount: body.paidAmount,
                   mode: body.transactionDetails.type,
                   date: req.body.date,
                   type: "in",
-                  whose: "customer",
+                  whose: "vendor",
                   documents: [
                     {
                       type: "erp",
-                      id: getInvoiceResult.id,
+                      id: getPurchaseResult.id,
                     },
                   ],
                 })
                 .then(async (getPayResult) => {
+             
                   new Promise((resolve, reject) => {
                     (async () => {
-                      getCustomer = await createClientBalanceForPayment({
+                      getVendor = await createClientBalanceForPayment({
                         paidAmount: body.paidAmount,
                         totalAmount: body.totalPrice,
                         payment: getPayResult,
-                        getCustomer,
+                        getVendor,
                       });
 
-                      await getCustomer.save();
+                      await getVendor.save();
                     })();
                   });
 
                   // add payment details in invoice  and save them
-                  getInvoiceResult.paymentTransactions.push({
+                  getPurchaseResult.paymentTransactions.push({
                     type: "payment",
                     id: getPayResult.id,
                   });
-                  await getInvoiceResult.save();
+                  await getPurchaseResult.save();
                   resolve({
                     status: "success",
-                    message: "Invoice Created Successfully",
+                    message: "Purchase Created Successfully",
                   });
                 })
                 .catch((err) => {
                   console.log(err);
                   callBack(null, {
                     status: "error",
-                    message: "Getting Error When Create Invoice",
+                    message: "Getting Error When Create Purchase",
                   });
                 });
             else {
-              await getCustomer.save();
+              await getVendor.save();
             }
 
             return resolve({
               status: "success",
-              message: "Invoice Created Successfully",
+              message: "Purchase Created Successfully",
             });
           })
           .catch((err) => {
             console.log(err);
             callBack(null, {
               status: "error",
-              message: "Getting Error When Create Invoice",
+              message: "Getting Error When Create Purchase",
             });
           });
       })();
     });
   }
 
-  async getAllInvoice({ req, callBack }) {
+  async getAllPurchase({ req, callBack }) {
     try {
-      const getInvoice = await invoice.find({ orgId: req.session.orgId });
-      if (!getInvoice)
+      const getVendor = await purchase.find({ orgId: req.session.orgId });
+      if (!getVendor)
         callBack(null, {
           status: "error",
           message: "something went wrong with organization Id",
         });
-      callBack({status:"success",message:"Get All Invoice Successfully",data:getInvoice});
+      callBack({status:"success",message:"Get All Purchase Successfully",data:getVendor});
     } catch (error) {
+      
       callBack(error);
     }
   }
-  async cancelInvoice({ req, callBack, services, id }) {
+  async cancelPurchase({ req, callBack, services, id }) {
     try {
-      const getInvoice = await invoice.findOne({
+      const getPurchase = await purchase.findOne({
         orgId: req.session.orgId,
         id,
       });
 
-      if (!getInvoice)
-        callBack(null, {
+      if (!getPurchase)
+       return callBack(null, {
           status: "error",
-          message: "something went wrong with organization Id Or Invoice Id",
+          message: "something went wrong with organization Id Or Purchase Id",
         });
-      if (getInvoice.status == "cancelled")
+      if (getPurchase.status == "cancelled")
         return callBack(null, {
           status: "error",
-          message: "Invoice is already cancelled",
+          message: "Purchase is already cancelled",
         });
-      if (getInvoice.paymentTransactions.length > 0) {
-        req.body.docId = getInvoice.id;
-        for (let i = 0; i < getInvoice.paymentTransactions.length; i++) {
+      if (getPurchase.paymentTransactions.length > 0) {
+        req.body.docId = getPurchase.id;
+        for (let i = 0; i < getPurchase.paymentTransactions.length; i++) {
           const getPromise = await new Promise((resolve, reject) => {
             (async () => {
               //  If the payment is made through cash or UPI, the function will call
-              if (getInvoice.paymentTransactions[i].type !== "balance") {
-                req.body.paymentId = getInvoice.paymentTransactions[i].id;
-                // req.body.docId = getInvoice.id;
+              if (getPurchase.paymentTransactions[i].type !== "balance") {
+                req.body.paymentId = getPurchase.paymentTransactions[i].id;
+                
                 await services.payment.cancelPayment({
                   req,
-                  totalPrice: getInvoice.totalPrice,
-                  paidAmount: getInvoice.paidAmount,
+                  totalPrice: getPurchase.totalPrice,
+                  paidAmount: getPurchase.paidAmount,
                   lastIndex:
-                    getInvoice.paymentTransactions[
-                      getInvoice.paymentTransactions.length - 1
-                    ] == getInvoice.paymentTransactions[i]
+                    getPurchase.paymentTransactions[
+                      getPurchase.paymentTransactions.length - 1
+                    ] == getPurchase.paymentTransactions[i]
                       ? true
                       : false,
                   callback: function (err, data) {
@@ -283,16 +289,16 @@ module.exports = class Invoice {
               else
                 await services.payment.cancelPaymentForBalance({
                   req,
-                  totalPrice: getInvoice.totalPrice,
-                  paidAmount: getInvoice.paidAmount,
-                  whose: "customer",
-                  id: getInvoice.customerDetails.cusID,
-                  amount:getInvoice.paymentTransactions[i].amount,
+                  totalPrice: getPurchase.totalPrice,
+                  paidAmount: getPurchase.paidAmount,
+                  whose: "vendor",
+                  id: getPurchase.vendorDetails.venID,
+                  amount:getPurchase.paymentTransactions[i].amount,
                   isViaBalance:true,
                   lastIndex:
-                    getInvoice.paymentTransactions[
-                      getInvoice.paymentTransactions.length - 1
-                    ] == getInvoice.paymentTransactions[i]
+                    getPurchase.paymentTransactions[
+                      getPurchase.paymentTransactions.length - 1
+                    ] == getPurchase.paymentTransactions[i]
                       ? true
                       : false,
                   callback: function (err, data) {
@@ -302,21 +308,21 @@ module.exports = class Invoice {
                   },
                 });
             })();
-          });
+          })
 
           if (getPromise.status == "error") return callBack(null, getPromise);
         }
       }
       // This function will call if the payment doesn't pay
-      else if (getInvoice.paidAmount == 0) {
+      else if (getPurchase.paidAmount == 0) {
         const getPromise = await new Promise(function (resolve, reject) {
           (async () => {
             await services.payment.cancelPaymentForBalance({
               req,
-              totalPrice: getInvoice.totalPrice,
-              paidAmount: getInvoice.paidAmount,
-              whose: "customer",
-              id: getInvoice.customerDetails.cusID,
+              totalPrice: getPurchase.totalPrice,
+              paidAmount: getPurchase.paidAmount,
+              whose: "vendor",
+              id: getPurchase.vendorDetails.venID,
               lastIndex: true,
               callback: function (err, data) {
                 if (err) resolve(data);
@@ -331,83 +337,56 @@ module.exports = class Invoice {
           return callBack(null, getPromise);
       }
 // change status to "cancelled"
-      getInvoice.status = "cancelled";
-       await getInvoice.save();
+      getPurchase.status = "cancelled";
+    
+       await getPurchase.save();
       callBack(
-        { status: "success", message: "invoice cancelled successfully" },
+        { status: "success", message: "Purchase cancelled successfully" },
         false
       );
     } catch (error) {
+        console.log(error);
       callBack(null, error.message);
     }
   }
 
-  async deleteInvoice({ req, callBack, id }) {
-    try {
-      const checkIsCancel = await invoice.findOne({
-        orgId: req.session.orgId,
-        id,
-      });
 
-      if (checkIsCancel.status !== "cancelled")
-        return callBack(null, {
-          status: "error",
-          message: "Invoice is not cancelled so you could not delete this",
-        });
-      const getInvoice = await invoice.deleteOne({
-        orgId: req.session.orgId,
-        id,
-      });
-      if (!getInvoice)
-        callBack(null, {
-          status: "error",
-          message: "something went wrong with organization Id",
-        });
-      callBack(
-        { status: "status", message: "invoice delete successfully" },
-        false
-      );
-    } catch (error) {
-      callBack(error);
-    }
-  }
+  /// purchasePayment fuction
 
-  /// invoicePayment fuction
-
-  async invoicePayment({ req, callBack, services, body }) {
+  async purchasePayment({ req, callBack, services, body }) {
     try {
       const { id, date, amount } = body;
-      const getInvoice = await invoice.findOne({ id });
-      if (!getInvoice)
+      const getPurchase = await purchase.findOne({ id });
+      if (!getPurchase)
         return callBack(null, {
           status: "error",
-          message: "couldn't find invoice ",
+          message: "Can't find Purchase ",
         });
-      let getClient = await Customer.findOne({
-        _id: getInvoice.customerDetails.cusID,
+      let getClient = await Vendor.findOne({
+        _id: getPurchase.vendorDetails.venID,
       });
 
       if (!getClient)
         return callBack(null, {
           status: "error",
-          message: "couldn't find client ",
+          message: "Can't find client ",
         });
-      if (getInvoice.status == "paid")
+      if (getPurchase.status == "paid")
         return callBack(null, {
           status: "error",
-          message: "Invoice is already paid",
+          message: "Purchase is already paid",
         });
 
-      if (getInvoice.status == "cancelled")
+      if (getPurchase.status == "cancelled")
         return callBack(null, {
           status: "error",
-          message: "You could not pay invoice while invoice was cancelled",
+          message: "You could not pay Purchase while Purchase is cancelled",
         });
 
       if (
-        amount > getInvoice.totalPrice ||
-        getInvoice.totalPrice < getInvoice.paidAmount ||
-        getInvoice.totalPrice < getInvoice.paidAmount + amount
+        amount > getPurchase.totalPrice ||
+        getPurchase.totalPrice < getPurchase.paidAmount ||
+        getPurchase.totalPrice < getPurchase.paidAmount + amount
       )
         return callBack(null, {
           status: "error",
@@ -420,14 +399,14 @@ module.exports = class Invoice {
           clientId: getClient._id,
           name: getClient.name,
           amount,
-          mode: "Cash",
+          mode: req.body.mode,
           date,
           type: "in",
-          whose: "customer",
+          whose: "vendor",
           documents: [
             {
               type: "erp",
-              id: getInvoice.id,
+              id: getPurchase.id,
             },
           ],
         })
@@ -436,45 +415,45 @@ module.exports = class Invoice {
             (async () => {
               getClient = await createClientBalanceForPayment({
                 paidAmount: amount,
-                totalAmount: getInvoice.totalPrice,
+                totalAmount: getPurchase.totalPrice,
                 payment: {
                   paymentId: getPayResult.paymentId,
                   date,
-                  mode: "Cash",
+                  mode: req.body.mode,
                 },
-                getCustomer: getClient,
+                getVendor: getClient,
               });
             })();
           });
-          getInvoice.status = await getAmountStatus({
-            totalPrice: getInvoice.totalPrice,
-            paidAmount: getInvoice.paidAmount + amount,
+          getPurchase.status = await getAmountStatus({
+            totalPrice: getPurchase.totalPrice,
+            paidAmount: getPurchase.paidAmount + amount,
           });
 
-          getClient.ledger.map((invoice) => {
-            if (invoice.id == getInvoice.id) {
-              invoice.status = getInvoice.status;
+          getClient.ledger.map((purchase) => {
+            if (purchase.id == getPurchase.id) {
+              purchase.status = getPurchase.status;
             }
           });
 
-          getInvoice.paymentTransactions.push({
+          getPurchase.paymentTransactions.push({
             type: "payment",
             id: getPayResult.id,
           });
-          getInvoice.paidAmount = getInvoice.paidAmount + amount;
+          getPurchase.paidAmount = getPurchase.paidAmount + amount;
           await getClient.save();
-          await getInvoice.save();
+          await getPurchase.save();
           return callBack({
             statusbar: "success",
             message: "Make a payment successfully",
-            data: getInvoice,
+            data: getPurchase,
           });
         });
     } catch (error) {
       console.log(error);
       return callBack(null, {
         status: "error",
-        message: "something went wrong when trying to payment invoice",
+        message: "Something went wrong when trying to payment Purchase",
       });
     }
   }
@@ -482,37 +461,37 @@ module.exports = class Invoice {
   async paymentThroughCurrentBalance({ req, body, callBack }) {
     try {
       const { id, amount } = body;
-      const getInvoice = await invoice.findOne({
+      const getPurchase = await purchase.findOne({
         orgId: req.session.orgId,
         id,
       });
-      if (!getInvoice)
+      if (!getPurchase)
        return callBack(null, {
           status: "error",
-          message: "Can't find invoice",
+          message: "Can't find Purchase",
         });
-      if (getInvoice.status == "paid")
+      if (getPurchase.status == "paid")
         return callBack(null, {
           status: "error",
-          message: "Invoice is already paid",
+          message: "Purchase is already paid",
         });
-      if (getInvoice.status == "cancelled")
+      if (getPurchase.status == "cancelled")
         return callBack(null, {
           status: "error",
-          message: "You could not pay your invoice while invoice was cancelled",
+          message: "You could not pay your Purchase while Purchase is cancelled",
         });
 
       if (
-        amount > getInvoice.totalPrice ||
-        getInvoice.totalPrice < getInvoice.paidAmount ||
-        getInvoice.totalPrice < getInvoice.paidAmount + amount
+        amount > getPurchase.totalPrice ||
+        getPurchase.totalPrice < getPurchase.paidAmount ||
+        getPurchase.totalPrice < getPurchase.paidAmount + amount
       )
         return callBack(null, {
           status: "error",
           message: "The Incorrect Paid Amount",
         });
-      const getClient = await Customer.findOne({
-        _id: getInvoice.customerDetails.cusID,
+      const getClient = await Vendor.findOne({
+        _id: getPurchase.vendorDetails.venID,
       });
 
       if (!getClient)
@@ -522,19 +501,19 @@ module.exports = class Invoice {
         });
 
 
-      getInvoice.status = await getAmountStatus({
-        totalPrice: getInvoice.totalPrice,
-        paidAmount: getInvoice.paidAmount + amount,
+      getPurchase.status = await getAmountStatus({
+        totalPrice: getPurchase.totalPrice,
+        paidAmount: getPurchase.paidAmount + amount,
       });
 
-      getClient.ledger.map((invoice) => {
-        if (invoice.id == getInvoice.id) {
-          invoice.status = getInvoice.status;
+      getClient.ledger.map((purchase) => {
+        if (purchase.id == getPurchase.id) {
+          purchase.status = getPurchase.status;
         }
       });
-      getInvoice.paymentTransactions.push({ type: "balance", amount: amount });
+      getPurchase.paymentTransactions.push({ type: "balance", amount: amount });
       // add the payment amount in the invoice paid amount
-      getInvoice.paidAmount = getInvoice.paidAmount + amount;
+      getPurchase.paidAmount = getPurchase.paidAmount + amount;
       // to add amount in client cloing balance
 
       getClient.balance.currentBalance = await addincreaseOrdecreaseBalance({
@@ -543,16 +522,17 @@ module.exports = class Invoice {
       });
     
       await getClient.save();
-      await getInvoice.save();
+      await getPurchase.save();
 
       return callBack({
         status: "success",
         message: "Make a payment successfully",
       });
     } catch (e) {
+      console.log(e);
       return callBack(null, {
         status: "error",
-        message: `something went wrong when trying to payment invoice`,
+        message: `Something went wrong when trying to payment purchase`,
       });
     }
   }
