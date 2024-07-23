@@ -18,7 +18,7 @@ exports.checkNotAuthenticated = (req, res, next) => {
 exports.sessionExpire = (req, res, next) => {
   // get the date multiple unix value from 1000
   // console.log(new Date(1709906417 * 1000));
-
+  console.log(req.path);
   const date = new Date();
 
   // if(req.session.expire == undefined) return res.json({status:"error",message:'You don`t have authenticated'})
@@ -37,11 +37,18 @@ exports.sessionExpire = (req, res, next) => {
     const now = moment(date);
     req.session.expire = now.unix();
     return next();
-  } else {
+  } else if (
+    req.path !== "/user/login" &&
+    req.path !== "/user/send-otp" &&
+    req.path !== "/user/createUser" &&
+    req.path !== "/user/resend-otp" &&
+    req.path !== "/user/create-business"
+  ) {
     return res
       .status(401)
       .json({ status: "error", message: "You not authenticated" });
   }
+  return next();
 };
 
 exports.userIsLogin = (req, res) => {

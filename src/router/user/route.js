@@ -111,7 +111,7 @@ module.exports = ({ passport, services, log }) => {
     }
   });
 
-  router.post("/create-profile", async (req, res) => {
+  router.post("/create-business", async (req, res) => {
     try {
       const {
         orgName,
