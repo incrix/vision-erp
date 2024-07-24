@@ -5,7 +5,7 @@ exports.checkTheInput = (req, res, next) => {
   try {
     const { body } = req;
     for (const key in body) {
-      if (body[key] === "" && key !== "categoryId" ) {
+      if (body[key] === "" ) {
         return res.status(400).json({
           status: "error",
           message: `Please fill in the ${key} field`,

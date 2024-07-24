@@ -158,68 +158,7 @@ module.exports = ({ passport, services, log }) => {
     }
   });
 
-  // router.post("/get-start", async (req, res) => {
-  //   try {
-  //     await services.user
-  //       .getStart({ req })
-  //       .then((result) => {
-  //         return res.json(result);
-  //       })
-  //       .catch((error) => {
-  //         console.log(error);
-  //         return res.json({ status: "error", message: "something went error" });
-  //       });
-  //   } catch (err) {
-  //     return res.send(err);
-  //   }
-  // });
 
-  // router.post("/send-business", (req, res) => {
-  //   try {
-  //     const { orgName, industryName, orgNum, email, orgGST } = req.body;
-  //     req.session.organizationName = orgName == "" ? "" : orgName;
-  //     req.session.industryName = industryName == "" ? "" : industryName;
-  //     req.session.orgNum = orgNum == "" ? "" : orgNum;
-  //     req.session.orgEmail = email == "" ? "" : email;
-  //     req.session.orgGST = orgGST == "" ? "" : orgGST;
-  //     res.json({
-  //       status: "success",
-  //       message: "get user business successfully",
-  //     });
-  //   } catch (err) {
-  //     return res.send(err);
-  //   }
-  // });
-
-  // router.post("/send-address", async (req, res) => {
-  //   try {
-  //     const { address1, address2, city, state, zip } = req.body;
-  //     req.session.address1 = address1 == "" ? "" : address1;
-  //     req.session.address2 = address2 == "" ? "" : address2;
-  //     req.session.city = city == "" ? "" : city;
-  //     req.session.state = state == "" ? "" : state;
-  //     req.session.zipCode = zip == "" ? "" : zip;
-  //     res.json({ status: "success", message: "get user address successfully" });
-  //   } catch (err) {
-  //     return res.send(err);
-  //   }
-  // });
-  // router.post("/send-info", async (req, res) => {
-  //   try {
-  //     const { orgLogo, avatar, gender } = req.body;
-  //     await services.user
-  //       .getBusinessSave({ req, orgLogo, avatar, gender })
-  //       .then((result) => {
-  //         return res.json(result);
-  //       })
-  //       .catch((error) => {
-  //         console.log(error);
-  //         return res.json({ status: "error", message: "something went error" });
-  //       });
-  //   } catch (err) {
-  //     return res.send(err);
-  //   }
-  // });
 
   return router;
 };

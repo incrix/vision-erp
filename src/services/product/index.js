@@ -7,9 +7,12 @@ const { getDateCreated } = require("../../utils/createDate");
 const product = require("../../models/product");
 const User = require("../../models/user");
 const Org = require("../../models/Org");
+const { addQuantityThroughIndex,addQuantityThroughLoop } = require("./productUtil");
 module.exports = class Product {
   async createCategory({ req, catName, imageUrl }) {
     try {
+      if (catName == "" || catName == undefined)
+        return { status: "error", message: "Please check the Category Name" };
       return await Category.findOne({
         userId: req.session.userId,
         orgId: req.session.orgId,
@@ -64,13 +67,12 @@ module.exports = class Product {
       const { getDate, getTime, getDateMilliseconds } = await getDateCreated();
       const productId = await generateProductID();
 
-
       let taxValue = body.withinTax
         ? body.unitPrice - (body.unitPrice * 100) / (100 + body.taxRate)
         : (body.unitPrice * body.taxRate) / 100;
-        console.log(taxValue);
- 
-      const getproduct = await product.findOne({
+      console.log(taxValue);
+
+      const getProduct = await product.findOne({
         userId: req.session.userId,
         type: body.type,
         productId,
@@ -83,7 +85,7 @@ module.exports = class Product {
       const user = await User.findOne({ _id: req.session.userId });
       if (!user) return { status: "error", message: "user are not authorized" };
       if (!org) return { status: "error", message: "are not authorized" };
-      if (getproduct)
+      if (getProduct)
         return { status: "error", message: "Product already exists" };
 
       return await product
@@ -91,11 +93,10 @@ module.exports = class Product {
           type: body.type,
           name: body.name,
           productId,
-          withinTax:body.withinTax,
+          withinTax: body.withinTax,
           userId: req.session.userId,
           orgId: req.session.orgId,
-          categoryId:
-            body.categoryId == undefined ? undefined : body.categoryId,
+          category: body.category == undefined ? undefined : body.category,
           barcode: body.barcode,
           date: getDate,
           time: getTime,
@@ -108,7 +109,7 @@ module.exports = class Product {
           purchasePrice: body.purchasePrice,
           tax: {
             rate: body.taxRate,
-            value: taxValue ,
+            value: taxValue,
           },
           stockQty: body.stockQty,
           isSales: body.isSales,
@@ -128,6 +129,85 @@ module.exports = class Product {
     }
   }
 
+  // Decrease and Increase The Product Count
+  async productDecreaseOrIncrease({ callBack, list, req }) {
+    try {
+      if (list.length == 0)
+        return callBack(null, {
+          status: "error",
+          message: "Something wrong at Product",
+        });
+      const productList = await product.find({
+        userId: req.session.userId,
+        orgId: req.session.orgId,
+      });
+      if (!productList)
+        return callBack(null, {
+          status: "error",
+          message: "Something went wrong at Product getting",
+        });
+      if (productList.length < 0)
+        return callBack(null, {
+          status: "error",
+          message: "You don't have Product",
+        });
+      for (let i = 0; i < list.length; i++) {
+        const productCheck = productList[list[i].productIndex];
+        if (productCheck !== undefined)
+          if (
+            productCheck.productId == list[i].productId &&
+            productCheck.name == list[i].name 
+          ) {
+            const getWait = await new Promise((resolve, reject) => {
+              (async () => {
+                return await addQuantityThroughIndex({
+                  productList,
+                  index: i,
+                  list,
+                  resolve,
+                  reject,
+                });
+              })();
+            });
+            if (getWait.status == "error") return callBack(null, getWait);
+          } else {
+            const getWait = await new Promise((resolve, reject) => {
+              (async () => {
+                return await addQuantityThroughLoop({
+                  productList,
+                  index: i,
+                  list,
+                  resolve,
+                  reject,
+                });
+              })();
+            });
+            
+            if (getWait.status == "error") return callBack(null, getWait);
+          }
+          else return callBack(null,
+            {
+              status: "error",
+              message: "Something went wrong with the product.",
+            }
+            
+          );
+      }
+
+      return callBack(
+        {
+          status: "success",
+          message: "Successfully added product quantity",
+        },
+        false
+      );
+    } catch (error) {
+      console.log(error);
+      return callBack(null, { status: "error", message: error.message });
+    }
+  }
+
+  //Get All Product
   async getAllProducts({ req }) {
     try {
       return await product
@@ -178,11 +258,10 @@ module.exports = class Product {
       return { status: "error", message: "something went wrong" };
     }
   }
- async isCallProductQuantity ({callback,req}) {
- try {
-  
- } catch (error) {
-  callback(null,{status: "error", message: error.message})
- }
+  async isCallProductQuantity({ callback, req }) {
+    try {
+    } catch (error) {
+      callback(null, { status: "error", message: error.message });
+    }
   }
 };

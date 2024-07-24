@@ -2,7 +2,7 @@ const invoice = require("../../models/invoice");
 const Customer = require("../../models/customer");
 const { genereateInvoiceId } = require("../../utils/generateID");
 const {
-  getPersentageAmount,
+  getPercentageAmount,
   getAmountStatus,
   createClientBalanceForInvoice,
   createClientBalanceForPayment,
@@ -96,7 +96,7 @@ module.exports = class Invoice {
                     : body.additionalCharges.package.value,
                 amount:
                   body.additionalCharges.package.type == "%"
-                    ? getPersentageAmount({
+                    ? getPercentageAmount({
                         totalPrice: body.totalPrice,
                         value: body.additionalCharges.package.value,
                       })
@@ -113,7 +113,7 @@ module.exports = class Invoice {
                     : body.additionalCharges.delivery.value,
                 amount:
                   body.additionalCharges.delivery.type == "%"
-                    ? getPersentageAmount({
+                    ? getPercentageAmount({
                         totalPrice: body.totalPrice,
                         value: body.additionalCharges.delivery.value,
                       })
@@ -127,7 +127,7 @@ module.exports = class Invoice {
               value: body.discount.value,
               amount:
                 body.discount.type == "%"
-                  ? getPersentageAmount({
+                  ? getPercentageAmount({
                       totalPrice: body.totalPrice,
                       value: body.discount.value,
                     })
@@ -143,7 +143,7 @@ module.exports = class Invoice {
             date: req.body.date,
           })
           .then(async (getInvoiceResult) => {
-            new Promise((resolve, reject) => {
+            const getWaiting = new Promise((resolve, reject) => {
               (async () => {
                 getCustomer = await createClientBalanceForInvoice({
                   paidAmount: body.paidAmount,
@@ -151,9 +151,10 @@ module.exports = class Invoice {
                   invoice: getInvoiceResult,
                   getCustomer,
                 });
-
+              
               })();
             });
+            if (getWaiting.status == "error") return callBack(getWaiting);
             if (body.paidAmount > 0)
               return await services.payment
                 .createPayment({
@@ -232,7 +233,11 @@ module.exports = class Invoice {
           status: "error",
           message: "something went wrong with organization Id",
         });
-      callBack({status:"success",message:"Get All Invoice Successfully",data:getInvoice});
+      callBack({
+        status: "success",
+        message: "Get All Invoice Successfully",
+        data: getInvoice,
+      });
     } catch (error) {
       callBack(error);
     }
@@ -287,8 +292,8 @@ module.exports = class Invoice {
                   paidAmount: getInvoice.paidAmount,
                   whose: "customer",
                   id: getInvoice.customerDetails.cusID,
-                  amount:getInvoice.paymentTransactions[i].amount,
-                  isViaBalance:true,
+                  amount: getInvoice.paymentTransactions[i].amount,
+                  isViaBalance: true,
                   lastIndex:
                     getInvoice.paymentTransactions[
                       getInvoice.paymentTransactions.length - 1
@@ -330,9 +335,9 @@ module.exports = class Invoice {
         if (getPromise.status == "error" || getPromise == null)
           return callBack(null, getPromise);
       }
-// change status to "cancelled"
+      // change status to "cancelled"
       getInvoice.status = "cancelled";
-       await getInvoice.save();
+      await getInvoice.save();
       callBack(
         { status: "success", message: "invoice cancelled successfully" },
         false
@@ -487,7 +492,7 @@ module.exports = class Invoice {
         id,
       });
       if (!getInvoice)
-       return callBack(null, {
+        return callBack(null, {
           status: "error",
           message: "Can't find invoice",
         });
@@ -521,7 +526,6 @@ module.exports = class Invoice {
           message: "Couldn't find client ",
         });
 
-
       getInvoice.status = await getAmountStatus({
         totalPrice: getInvoice.totalPrice,
         paidAmount: getInvoice.paidAmount + amount,
@@ -541,7 +545,7 @@ module.exports = class Invoice {
         balance: getClient.balance.currentBalance,
         paidAmount: amount,
       });
-    
+
       await getClient.save();
       await getInvoice.save();
 

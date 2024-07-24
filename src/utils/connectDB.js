@@ -1,9 +1,9 @@
- var mongoose = require('mongoose')
+var mongoose = require("mongoose");
 
 let connection = null;
-let db 
+let db;
 
-module.exports = async function ({url,poolSize}) {
+module.exports = async function ({ url, poolSize }) {
   if (
     connection === null ||
     (connection.connection.readyState !== 1 &&
@@ -14,36 +14,34 @@ module.exports = async function ({url,poolSize}) {
     console.log("[MONGOOSE] Creating New Connection");
 
     mongoose.connection.on("open", () => {
-        console.log("Connected with poolSize " + poolSize);
-   //   log("[ MONGOOSE] Connected with poolSize " + poolsize);
+      console.log("Connected with poolSize " + poolSize);
+      //   log("[ MONGOOSE] Connected with poolSize " + poolsize);
     });
 
     try {
-  mongoose.connect(url, {
-        serverSelectionTimeoutMS:10000,
-        connectTimeoutMS: 10000,
-        maxPoolSize: poolSize,
-      }).then(res => {
-        db = res        
-      })
-
+      mongoose
+        .connect(url, {
+          maxPoolSize: poolSize,
+          connectTimeoutMS: 10000,
+          serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+          socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+        })
+        .then((res) => {
+          db = res;
+        });
     } catch (err) {
       console.log("Mongoose connection error", err);
     }
     connection = mongoose; //save it to the cache variable
-  
-    return 
+
+    return;
   } else {
     return;
   }
 };
 
-function afterwards(){
-
-    //do stuff
-console.log('calling 2');
-   // db.disconnect();
+function afterwards() {
+  //do stuff
+  console.log("calling 2");
+  // db.disconnect();
 }
-
-
-  

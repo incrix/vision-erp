@@ -1,4 +1,4 @@
-exports.getPersentageAmount = ({ totalPrice, value }) => {
+exports.getPercentageAmount = ({ totalPrice, value }) => {
     return eval(totalPrice) * (eval(value) / 100);
   };
   

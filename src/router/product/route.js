@@ -33,12 +33,11 @@ module.exports = ({ passport, services, log }) => {
 
   router.post("/create-product", async (req, res) => {
     try {
-       
       await services.product
-        .createProduct( {body:req.body,req} )
+        .createProduct({ body: req.body, req })
         .then((createProductResponse) => res.json(createProductResponse))
         .catch((error) => {
-            console.log(error);
+          console.log(error);
           return res.json({ status: "error", message: "something went wrong" });
         });
     } catch (error) {
@@ -46,46 +45,57 @@ module.exports = ({ passport, services, log }) => {
     }
   });
 
-  router.post('/create-category-child',async (req,res)=>{
-try {
-  const { parentId, imageUrl, catName } = req.body;
-  await services.product
-   .createCategoryChild({ req, catName, parentId, imageUrl })
-   .then((response) => {
-      return res.json(response);
-    });  
-} catch (error) {
-  throw error;
-}
-  })
+  router.post("/create-category-child", async (req, res) => {
+    try {
+      const { parentId, imageUrl, catName } = req.body;
+      await services.product
+        .createCategoryChild({ req, catName, parentId, imageUrl })
+        .then((response) => {
+          return res.json(response);
+        });
+    } catch (error) {
+      throw error;
+    }
+  });
 
-  router.get('/get-all-products',(req,res) =>{
+  router.get("/get-all-products", (req, res) => {
     try {
       services.product
-     .getAllProducts({ req })
-     .then((getAllProductsResponse) => {
+        .getAllProducts({ req })
+        .then((getAllProductsResponse) => {
           return res.json(getAllProductsResponse);
         })
-     .catch((error) => {
+        .catch((error) => {
           return res.json({ status: "error", message: "Something Went Wrong" });
         });
     } catch (error) {
       throw error;
     }
-  })
-  router.post('/product-active',async(req,res) =>{
+  });
+  router.post("/productCheckCount", async (req, res) => {
+    
+    await services.product.productDecreaseOrIncrease({
+      req,
+      list: req.body.items,
+      callBack: (err, data) => {
+        if (err) return res.status(401).json(err)
+        return res.json(data);
+      },
+    });
+  });
+  router.post("/product-active", async (req, res) => {
     try {
-        req.body.req = req
-        await services.product.productActive(req.body)
+      req.body.req = req;
+      await services.product
+        .productActive(req.body)
         .then((responseProductActive) => res.json(responseProductActive))
         .catch((error) => {
-            return res.json({ status: "error", message: "Something went wrong" });
+          return res.json({ status: "error", message: "Something went wrong" });
         });
-        
     } catch (error) {
-        throw error
+      throw error;
     }
-  })
+  });
 
   return router;
 };

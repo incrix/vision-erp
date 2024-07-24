@@ -78,6 +78,10 @@ const schema = mongoose.Schema(
         productId: {
           type: String,
         },
+        productIndex: {
+          type: Number,
+          required: true,
+        },
         price: {
           type: Number,
           required: true,

@@ -5,7 +5,7 @@ const purchase = require("../../models/purchase");
 const Vendor = require("../../models/vendor");
 const { genereatePurchase } = require("../../utils/generateID");
 const {
-  getPersentageAmount,
+  getPercentageAmount,
   getAmountStatus,
   createClientBalanceForPurchase,
   createClientBalanceForPayment,
@@ -100,7 +100,7 @@ module.exports = class Purchase {
                     : body.additionalCharges.package.value,
                 amount:
                   body.additionalCharges.package.type == "%"
-                    ? getPersentageAmount({
+                    ? getPercentageAmount({
                         totalPrice: body.totalPrice,
                         value: body.additionalCharges.package.value,
                       })
@@ -117,7 +117,7 @@ module.exports = class Purchase {
                     : body.additionalCharges.delivery.value,
                 amount:
                   body.additionalCharges.delivery.type == "%"
-                    ? getPersentageAmount({
+                    ? getPercentageAmount({
                         totalPrice: body.totalPrice,
                         value: body.additionalCharges.delivery.value,
                       })
@@ -131,7 +131,7 @@ module.exports = class Purchase {
               value: body.discount.value,
               amount:
                 body.discount.type == "%"
-                  ? getPersentageAmount({
+                  ? getPercentageAmount({
                       totalPrice: body.totalPrice,
                       value: body.discount.value,
                     })

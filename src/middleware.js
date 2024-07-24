@@ -18,7 +18,7 @@ exports.checkNotAuthenticated = (req, res, next) => {
 exports.sessionExpire = (req, res, next) => {
   // get the date multiple unix value from 1000
   // console.log(new Date(1709906417 * 1000));
-  console.log(req.path);
+ 
   const date = new Date();
 
   // if(req.session.expire == undefined) return res.json({status:"error",message:'You don`t have authenticated'})
