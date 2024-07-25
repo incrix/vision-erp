@@ -7,7 +7,12 @@ const { getDateCreated } = require("../../utils/createDate");
 const product = require("../../models/product");
 const User = require("../../models/user");
 const Org = require("../../models/Org");
-const { addQuantityThroughIndex,addQuantityThroughLoop } = require("./productUtil");
+const {
+  addQuantityThroughIndex,
+  addQuantityThroughLoop,
+} = require("./productUtil");
+const Vendor = require("../../models/vendor");
+const Customer = require("../../models/customer");
 module.exports = class Product {
   async createCategory({ req, catName, imageUrl }) {
     try {
@@ -130,7 +135,7 @@ module.exports = class Product {
   }
 
   // Decrease and Increase The Product Count
-  async productDecreaseOrIncrease({ callBack, list, req }) {
+  async productDecreaseOrIncrease({ callBack, clientCount, list, req }) {
     try {
       if (list.length == 0)
         return callBack(null, {
@@ -156,13 +161,15 @@ module.exports = class Product {
         if (productCheck !== undefined)
           if (
             productCheck.productId == list[i].productId &&
-            productCheck.name == list[i].name 
+            productCheck.name == list[i].name
           ) {
             const getWait = await new Promise((resolve, reject) => {
               (async () => {
                 return await addQuantityThroughIndex({
                   productList,
                   index: i,
+                  clientCount,
+                  type: req.body.type,
                   list,
                   resolve,
                   reject,
@@ -177,23 +184,22 @@ module.exports = class Product {
                   productList,
                   index: i,
                   list,
+                  clientCount,
+                  type: req.body.type,
                   resolve,
                   reject,
                 });
               })();
             });
-            
+
             if (getWait.status == "error") return callBack(null, getWait);
           }
-          else return callBack(null,
-            {
-              status: "error",
-              message: "Something went wrong with the product.",
-            }
-            
-          );
+        else
+          return callBack(null, {
+            status: "error",
+            message: "Something went wrong with the product.",
+          });
       }
-
       return callBack(
         {
           status: "success",
@@ -202,11 +208,10 @@ module.exports = class Product {
         false
       );
     } catch (error) {
-      console.log(error);
+  
       return callBack(null, { status: "error", message: error.message });
     }
   }
-
   //Get All Product
   async getAllProducts({ req }) {
     try {
@@ -240,7 +245,7 @@ module.exports = class Product {
               status: "error",
               message: "Product not found",
             };
-          product.erpDetails.erpActive = !product.erpDetails.erpActive;
+          product.isSales = !product.isSales;
           await product.save();
           return {
             status: "success",
@@ -258,10 +263,53 @@ module.exports = class Product {
       return { status: "error", message: "something went wrong" };
     }
   }
-  async isCallProductQuantity({ callback, req }) {
+  // add product check function call
+  async isCallProductQuantity({ req, res }) {
     try {
+      const type = req.body.type;
+      const client = type == "invoice" ? req.body.cusId : req.body.venId;
+
+      if (client.length < 0)
+        return res
+          .status(203)
+          .json({ status: "error", message: "Please select a client" });
+      for (var i = 0; i < client.length; i++) {
+        if (type == "invoice") {
+          const cus = await Customer.findOne({ _id: client[i] }).catch((err) =>
+            res.status(203).json({ status: "error", message: err.message })
+          );
+          if (cus == null)
+            return res
+              .status(403)
+              .json({ status: "error", message: "can't find Customer" });
+        } else if (type == "purchase") {
+          const ven = await Vendor.findOne({ _id: client[i] }).catch((err) =>
+            res.status(203).json({ status: "error", message: err.message })
+          );
+          if (ven == null)
+            return res
+              .status(403)
+              .json({ status: "error", message: "can't find Vendor" });
+        } else {
+          return res
+            .status(203)
+            .json({ status: "error", message: "Something went wrong in type" });
+        }
+      }
+
+      await this.productDecreaseOrIncrease({
+        req,
+        list: req.body.items,
+        clientCount:
+          type == "invoice" ? req.body.cusId.length : req.body.venId.length,
+        callBack: (err, data) => {
+          if (err) return res.status(401).json(err);
+          return res.json(data);
+        },
+      });
     } catch (error) {
-      callback(null, { status: "error", message: error.message });
+      console.log(error);
+      return res.status(203).json({ status: "error", message: error.message });
     }
   }
 };

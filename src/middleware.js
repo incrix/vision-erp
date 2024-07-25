@@ -39,6 +39,7 @@ exports.sessionExpire = (req, res, next) => {
     return next();
   } else if (
     req.path !== "/user/login" &&
+    req.path !== "/user/otp-verify"&&
     req.path !== "/user/send-otp" &&
     req.path !== "/user/createUser" &&
     req.path !== "/user/resend-otp" &&

@@ -2,14 +2,27 @@ exports.addQuantityThroughIndex = async ({
   productList,
   index,
   list,
+  clientCount,
+  type,
   resolve,
   reject,
 }) => {
   try {
-    productList[list[index].productIndex].stockQty = await countProduct(
-      productList[list[index].productIndex].stockQty,
-      list[index].quantity
-    );
+    if (productList[list[index].productIndex].isSales == false)
+      return reject({
+        status: "error",
+        message: "Can't add product while product status false",
+      });
+    productList[list[index].productIndex].stockQty =
+      type == "invoice"
+        ? await countProductForInvoice(
+            productList[list[index].productIndex].stockQty,
+            list[index].quantity * clientCount
+          )
+        : countProductForPurchase(
+            productList[list[index].productIndex].stockQty,
+            list[index].quantity * clientCount
+          );
     await productList[list[index].productIndex].save();
     return resolve({
       status: "success",
@@ -26,6 +39,8 @@ exports.addQuantityThroughLoop = async ({
   productList,
   index,
   list,
+  clientCount,
+  type,
   resolve,
   reject,
 }) => {
@@ -41,12 +56,24 @@ exports.addQuantityThroughLoop = async ({
         status: "error",
         message: `can't find ${list[index].name} product`,
       });
-      productList[getProductIndex].stockQty = await countProduct(
-        productList[getProductIndex].stockQty,
-        list[index].quantity
-      );
-      await productList[getProductIndex].save();
-  
+    if (productList[getProductIndex].isSales == false)
+      return reject({
+        status: "error",
+        message: "Can't add product while product status false",
+      });
+
+    productList[getProductIndex].stockQty =
+      type == "invoice"
+        ? await countProductForInvoice(
+            productList[getProductIndex].stockQty,
+            list[index].quantity * clientCount
+          )
+        : countProductForPurchase(
+            productList[getProductIndex].stockQty,
+            list[index].quantity * clientCount
+          );
+    await productList[getProductIndex].save();
+
     return resolve({
       status: "success",
       message: `Product saved successfully for ${productList[getProductIndex].productId}`,
@@ -57,9 +84,16 @@ exports.addQuantityThroughLoop = async ({
   }
 };
 
-const countProduct = (stockQty, quantity) => {
+const countProductForInvoice = (stockQty, quantity) => {
   if (stockQty > 0) {
     return stockQty - quantity;
   }
   return stockQty - quantity;
+};
+
+const countProductForPurchase = (stockQty, quantity) => {
+  if (stockQty > 0) {
+    return stockQty + quantity;
+  }
+  return stockQty + quantity;
 };

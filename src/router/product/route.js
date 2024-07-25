@@ -72,15 +72,11 @@ module.exports = ({ passport, services, log }) => {
       throw error;
     }
   });
-  router.post("/productCheckCount", async (req, res) => {
+  router.post("/productCountForInvoice", async (req, res) => {
     
-    await services.product.productDecreaseOrIncrease({
+    await services.product.isCallProductQuantity({
       req,
-      list: req.body.items,
-      callBack: (err, data) => {
-        if (err) return res.status(401).json(err)
-        return res.json(data);
-      },
+      res,
     });
   });
   router.post("/product-active", async (req, res) => {
