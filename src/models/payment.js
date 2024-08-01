@@ -56,6 +56,12 @@ const schema = mongoose.Schema(
         id: {
           type: String,
         },
+        docAmount:{
+          type: Number,
+        },
+        payAmount:{
+          type: Number,
+        },
         _id: false,
       },
     ],

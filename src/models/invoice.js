@@ -66,7 +66,7 @@ const schema = mongoose.Schema(
     transactionDetails: {
       mode: {
         type: String,
-        enum: ["Net Bank", "Cash", "UPI", "EMI"],
+        enum: ["Net Banking", "Cash", "UPI", "EMI", "Cheque"],
       },
     },
     items: [
@@ -99,11 +99,47 @@ const schema = mongoose.Schema(
             type: String,
             enum: ["₹", "%"],
           },
-          value: {
+          percentage: {
             type: Number,
           },
           amount: {
             type: Number,
+          },
+        },
+        tax: {
+          cgst: {
+            percentage: {
+              type: Number,
+            },
+            amount: {
+              type: Number,
+            },
+          },
+          sgst: {
+            percentage: {
+              type: Number,
+            },
+            amount: {
+              type: Number,
+            },
+          },
+          igst: {
+            percentage: {
+              type: Number,
+            },
+            amount: {
+              type: Number,
+            },
+          },
+          cess: {
+            percentage: {
+              type: Number,
+              default: 0,
+            },
+            amount: {
+              type: Number,
+              default: 0,
+            },
           },
         },
       },
@@ -117,10 +153,10 @@ const schema = mongoose.Schema(
         id: {
           type: String,
         },
-        amount:{
+        amount: {
           type: Number,
         },
-        _id:false
+        _id: false,
       },
     ],
     additionalCharges: {
@@ -168,7 +204,15 @@ const schema = mongoose.Schema(
       },
     },
     tax: {
-      type: Number,
+      igst: {
+        type: Number,
+      },
+      cgst: {
+        type: Number,
+      },
+      sgst: {
+        type: Number,
+      },
     },
     status: {
       type: String,
@@ -188,3 +232,5 @@ const schema = mongoose.Schema(
 );
 
 module.exports = mongoose.model("Invoice", schema);
+
+

@@ -5,7 +5,7 @@ exports.checkTheInput = (req, res, next) => {
   try {
     const { body } = req;
     for (const key in body) {
-      if (body[key] === "" ) {
+      if (body[key] === "") {
         return res.status(400).json({
           status: "error",
           message: `Please fill in the ${key} field`,
@@ -98,16 +98,23 @@ exports.checkTheInput = (req, res, next) => {
       }
       // transactionDetails
       if (key == "transactionDetails") {
-        if (typeof body[key].type !== "string")
-          return res.status(400).json({
-            status: "error",
-            message: `Please enter valid type`,
-          });
-        if (typeof body[key].totalPrice !== "number")
-          return res.status(400).json({
-            status: "error",
-            message: `Please enter valid totalPrice`,
-          });
+        if (body[key].type !== undefined)
+          if (typeof body[key].type !== "string")
+            return res.status(400).json({
+              status: "error",
+              message: `Please enter valid type `,
+            });
+        // if (body[key].type !=="Net Banking" || "Cash" ||"UPI" || "EMI" || "Cheque")
+        //   return res.status(400).json({
+        //     status: "error",
+        //     message: `can't make transaction through ${body[key].type}`,
+        //   });
+        if (body[key].totalPrice !== undefined)
+          if (typeof body[key].totalPrice !== "number")
+            return res.status(400).json({
+              status: "error",
+              message: `Please enter valid totalPrice`,
+            });
       }
       // additionalCharges
       if (key == "additionalCharges") {

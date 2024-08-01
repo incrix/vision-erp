@@ -62,7 +62,8 @@ module.exports = class Customer {
               .then(async (getPayResult) => {
                 if (getPayResult.status == "error") return getPayResult;
                 customerResponse.ledger.push({
-                  id: getPayResult.id,
+                  // id: getPayResult.id,
+                  id:"",
                   subTitle: "Balance",
                   mode: "Cash",
                   amount: balance.value,

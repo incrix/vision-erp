@@ -36,7 +36,7 @@ module.exports = (config) => {
   const app = express();
   const log = config.log();
 
-  // middlewere connection
+  // middleware Connection
   app.use(
     cors(
       {

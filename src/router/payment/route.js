@@ -28,7 +28,7 @@ module.exports = ({ passport, services, log }) => {
 
   router.post("/cancel-payment", async (req, res) => {
     await services.payment
-      .cancelPayment({
+      .cancelPaymentForManuel({
         req,callback: (err, payment) => {
             if (err) return res.json(err);
             return res.json(payment);

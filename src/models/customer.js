@@ -104,6 +104,24 @@ const schema = mongoose.Schema(
         amount: {
           type: Number,
         },
+        amountRemaining: {
+          type: Number,
+          default:  function () {
+            if(this.subTitle == "invoice") return 0 
+            return this.amount;
+          },
+        },
+        documents: [
+          {
+            _id: false,
+            id: {
+              type: String,
+            },
+            amount: {
+              type: Number,           
+            },
+          },
+        ],
         status: {
           type: String,
           enum: ["pending", "partially", "paid"],

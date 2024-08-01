@@ -17,6 +17,9 @@ module.exports = async function ({ url, poolSize }) {
       console.log("Connected with poolSize " + poolSize);
       //   log("[ MONGOOSE] Connected with poolSize " + poolsize);
     });
+    setTimeout(() =>{
+      
+    },60000)
 
     try {
       mongoose

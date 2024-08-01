@@ -66,7 +66,7 @@ const schema = mongoose.Schema(
     transactionDetails: {
       mode: {
         type: String,
-        enum: ["Net Bank", "Cash", "UPI", "EMI"],
+        enum: ["Net Banking","Cash","UPI", "EMI","Cheque"],
       },
     },
     items: [
@@ -99,7 +99,7 @@ const schema = mongoose.Schema(
             type: String,
             enum: ["₹", "%"],
           },
-          value: {
+          percentage: {
             type: Number,
           },
           amount: {

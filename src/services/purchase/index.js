@@ -180,11 +180,16 @@ module.exports = class Purchase {
              
                   new Promise((resolve, reject) => {
                     (async () => {
+                      getVendor.ledger[getVendor.ledger.length - 1].documents.push({
+                        id: getPayResult.paymentId,
+                        amount: getPayResult.amount,
+                      });
                       getVendor = await createClientBalanceForPayment({
                         paidAmount: body.paidAmount,
                         totalAmount: body.totalPrice,
                         payment: getPayResult,
                         getVendor,
+                        purchase:getPurchaseResult
                       });
 
                       await getVendor.save();
@@ -194,7 +199,8 @@ module.exports = class Purchase {
                   // add payment details in invoice  and save them
                   getPurchaseResult.paymentTransactions.push({
                     type: "payment",
-                    id: getPayResult.id,
+                    id: getPayResult.paymentId,
+                    amount: getPayResult.amount
                   });
                   await getPurchaseResult.save();
                   resolve({
@@ -422,6 +428,7 @@ module.exports = class Purchase {
                   mode: req.body.mode,
                 },
                 getVendor: getClient,
+                purchase:getPurchase
               });
             })();
           });
@@ -438,7 +445,8 @@ module.exports = class Purchase {
 
           getPurchase.paymentTransactions.push({
             type: "payment",
-            id: getPayResult.id,
+            id: getPayResult.paymentId,
+            amount:getPayResult.amount,
           });
           getPurchase.paidAmount = getPurchase.paidAmount + amount;
           await getClient.save();

@@ -74,6 +74,7 @@ exports.getPercentageAmount = ({ totalPrice, value }) => {
     paidAmount,
     getVendor,
     payment,
+    purchase
   }) => {
     const balanceAmount = getVendor.ledger[getVendor.ledger.length - 1].closingBalance;
     getVendor.ledger.push({
@@ -82,6 +83,13 @@ exports.getPercentageAmount = ({ totalPrice, value }) => {
       date: payment.date,
       mode: payment.mode,
       subTitle: "payment in",
+      documents: [
+        {
+          id: purchase.id,
+          amount:purchase.totalPrice
+        },
+      ],
+      amountRemaining:0,
       closingBalance: addCustomerBalance({
         balance: balanceAmount,
         paidAmount,

@@ -84,6 +84,24 @@ const schema = mongoose.Schema(
         closingBalance: {
           type: Number,
         },
+        amountRemaining: {
+          type: Number,
+          default:  function () {
+            if(this.subTitle == "purchase") return 0 
+            return this.amount;
+          },
+        },
+        documents: [
+          {
+            _id: false,
+            id: {
+              type: String,
+            },
+            amount: {
+              type: Number,           
+            },
+          },
+        ],
       },
     ],
     //Credit  == you pay the customer

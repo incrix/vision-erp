@@ -1,5 +1,6 @@
 const invoice = require("../../models/invoice");
 const Customer = require("../../models/customer");
+const Payment = require("../../models/payment");
 const { genereateInvoiceId } = require("../../utils/generateID");
 const {
   getPercentageAmount,
@@ -7,10 +8,11 @@ const {
   createClientBalanceForInvoice,
   createClientBalanceForPayment,
   addincreaseOrdecreaseBalance,
+  checkVerifyRemainingAmount,
 } = require("./invoiceUtil");
 
 const { getDateCreated } = require("../../utils/createDate");
-const Payment = require("../../models/payment");
+
 module.exports = class Invoice {
   async createInvoice({ body, req, callBack, services }) {
     try {
@@ -151,7 +153,6 @@ module.exports = class Invoice {
                   invoice: getInvoiceResult,
                   getCustomer,
                 });
-              
               })();
             });
             if (getWaiting.status == "error") return callBack(getWaiting);
@@ -170,17 +171,26 @@ module.exports = class Invoice {
                     {
                       type: "erp",
                       id: getInvoiceResult.id,
+                      payAmount: body.paidAmount,
+                      docAmount: body.totalPrice,
                     },
                   ],
                 })
                 .then(async (getPayResult) => {
                   new Promise((resolve, reject) => {
                     (async () => {
+                      getCustomer.ledger[
+                        getCustomer.ledger.length - 1
+                      ].documents.push({
+                        id: getPayResult.paymentId,
+                        amount: getPayResult.amount,
+                      });
                       getCustomer = await createClientBalanceForPayment({
                         paidAmount: body.paidAmount,
                         totalAmount: body.totalPrice,
                         payment: getPayResult,
                         getCustomer,
+                        invoice: getInvoiceResult,
                       });
 
                       await getCustomer.save();
@@ -190,7 +200,8 @@ module.exports = class Invoice {
                   // add payment details in invoice  and save them
                   getInvoiceResult.paymentTransactions.push({
                     type: "payment",
-                    id: getPayResult.id,
+                    id: getPayResult.paymentId,
+                    amount: getPayResult.amount,
                   });
                   await getInvoiceResult.save();
                   resolve({
@@ -228,6 +239,7 @@ module.exports = class Invoice {
   async getAllInvoice({ req, callBack }) {
     try {
       const getInvoice = await invoice.find({ orgId: req.session.orgId });
+
       if (!getInvoice)
         callBack(null, {
           status: "error",
@@ -267,7 +279,7 @@ module.exports = class Invoice {
               //  If the payment is made through cash or UPI, the function will call
               if (getInvoice.paymentTransactions[i].type !== "balance") {
                 req.body.paymentId = getInvoice.paymentTransactions[i].id;
-                // req.body.docId = getInvoice.id;
+                console.log("balance");
                 await services.payment.cancelPayment({
                   req,
                   totalPrice: getInvoice.totalPrice,
@@ -285,7 +297,7 @@ module.exports = class Invoice {
                 });
               }
               //  If the payment is made through the closing balance, the function will call
-              else
+              else {
                 await services.payment.cancelPaymentForBalance({
                   req,
                   totalPrice: getInvoice.totalPrice,
@@ -306,6 +318,7 @@ module.exports = class Invoice {
                     resolve(data);
                   },
                 });
+              }
             })();
           });
 
@@ -335,6 +348,8 @@ module.exports = class Invoice {
         if (getPromise.status == "error" || getPromise == null)
           return callBack(null, getPromise);
       }
+
+      getInvoice.paymentTransactions = [];
       // change status to "cancelled"
       getInvoice.status = "cancelled";
       await getInvoice.save();
@@ -433,6 +448,8 @@ module.exports = class Invoice {
             {
               type: "erp",
               id: getInvoice.id,
+              docAmount: getInvoice.amount,
+              payAmount: amount,
             },
           ],
         })
@@ -448,6 +465,7 @@ module.exports = class Invoice {
                   mode: "Cash",
                 },
                 getCustomer: getClient,
+                invoice: getInvoice,
               });
             })();
           });
@@ -459,12 +477,17 @@ module.exports = class Invoice {
           getClient.ledger.map((invoice) => {
             if (invoice.id == getInvoice.id) {
               invoice.status = getInvoice.status;
+              invoice.documents.push({
+                id: getPayResult.paymentId,
+                amount,
+              });
             }
           });
 
           getInvoice.paymentTransactions.push({
             type: "payment",
-            id: getPayResult.id,
+            id: getPayResult.paymentId,
+            amount: getPayResult.amount,
           });
           getInvoice.paidAmount = getInvoice.paidAmount + amount;
           await getClient.save();
@@ -486,7 +509,7 @@ module.exports = class Invoice {
 
   async paymentThroughCurrentBalance({ req, body, callBack }) {
     try {
-      const { id, amount } = body;
+      const { id, amount, paymentList } = body;
       const getInvoice = await invoice.findOne({
         orgId: req.session.orgId,
         id,
@@ -506,7 +529,6 @@ module.exports = class Invoice {
           status: "error",
           message: "You could not pay your invoice while invoice was cancelled",
         });
-
       if (
         amount > getInvoice.totalPrice ||
         getInvoice.totalPrice < getInvoice.paidAmount ||
@@ -525,22 +547,97 @@ module.exports = class Invoice {
           status: "error",
           message: "Couldn't find client ",
         });
+      if (paymentList.length < 0)
+        return callBack(null, {
+          status: "error",
+          message: "Please select a payment list",
+        });
+      const idList = [...paymentList.map((filter) => filter.id)];
+      const getPaymentList = await Payment.find({
+        orgId: req.session.orgId,
+        id: { $in: idList },
+      });
+
+      if (
+        getPaymentList.length <= 0 ||
+        getPaymentList.length !== paymentList.length
+      )
+        return callBack(null, {
+          status: "error",
+          message: "Please give Valuable a payment list",
+        });
 
       getInvoice.status = await getAmountStatus({
         totalPrice: getInvoice.totalPrice,
         paidAmount: getInvoice.paidAmount + amount,
       });
+      // we create this variable for get invoice index in ledger for add payment details to ledger invoice document
+      let getInvoiceIndex;
+      // add invoice and payment details in ledger
+      for (let index = 0; index < getClient.ledger.length; index++) {
+        let listIndex = idList.indexOf(getClient.ledger[index].id);
 
-      getClient.ledger.map((invoice) => {
-        if (invoice.id == getInvoice.id) {
-          invoice.status = getInvoice.status;
+        if (getClient.ledger[index].id == getInvoice.id) {
+          getClient.ledger[index].status = getInvoice.status;
+          // add index
+          getInvoiceIndex = index;
+        } else if (getClient.ledger[index].id == idList[listIndex]) {
+          const getWaiting = await new Promise((resolve, reject) => {
+            (async () => {
+              return await checkVerifyRemainingAmount({
+                resolve,
+                reject,
+                ledger: getClient.ledger[index],
+                isAdd: getClient.ledger[index].documents
+                  .map((doc) => doc.id)
+                  .includes(getInvoice.id),
+                invoice: getInvoice,
+                amount: paymentList[listIndex].amount,
+              });
+            })();
+          });
+
+          if (getWaiting.status == "error") {
+            return callBack(null, getWaiting);
+          }
+          // update the ledger with new details
+          getClient.ledger[index] = getWaiting.ledger;
+          // add payment details in payment transactions
+          getInvoice.paymentTransactions.push({
+            type: "payment",
+            id: getWaiting.ledger.id,
+            amount: paymentList[listIndex].amount,
+          });
+          // add invoice and payment details in payment documents of payment list
+          getPaymentList[
+            getPaymentList
+              .map((fil) => fil.id)
+              .indexOf(getClient.ledger[index].id)
+          ].documents.push({
+            type: "erp",
+            id: getInvoice.id,
+            docAmount: getInvoice.totalPrice,
+            payAmount: paymentList[listIndex].amount,
+          });
+          getPaymentList[
+            getPaymentList
+              .map((fil) => fil.id)
+              .indexOf(getClient.ledger[index].id)
+          ].save();
         }
-      });
-      getInvoice.paymentTransactions.push({ type: "balance", amount: amount });
+      }
+      //add invoice payment details into the client ledger  list
+      for (var i = 0; i < paymentList.length; i++) {
+        getClient.ledger[getInvoiceIndex].documents.push({
+          id: paymentList[i].id,
+          amount: paymentList[i].amount,
+        });
+      }
+
       // add the payment amount in the invoice paid amount
       getInvoice.paidAmount = getInvoice.paidAmount + amount;
-      // to add amount in client cloing balance
 
+      // to add amount in client closing balance
       getClient.balance.currentBalance = await addincreaseOrdecreaseBalance({
         balance: getClient.balance.currentBalance,
         paidAmount: amount,
@@ -549,14 +646,51 @@ module.exports = class Invoice {
       await getClient.save();
       await getInvoice.save();
 
+      // console.log(getInvoice);
+      // console.log(getPaymentList.documents);
+      // console.log(getClient.ledger);
       return callBack({
         status: "success",
         message: "Make a payment successfully",
       });
-    } catch (e) {
+    } catch (error) {
+      console.log(error);
       return callBack(null, {
         status: "error",
-        message: `something went wrong when trying to payment invoice`,
+        message: error,
+      });
+    }
+  }
+  // this function is for editing invoice details
+  async editInvoice({ callBack, req }) {
+    try {
+      const body = req.body;
+      const getInvoice = await invoice.findOne({ id: body.id });
+      if (!getInvoice)
+        return callBack(null, {
+          status: "error",
+          message: "Invoice not found",
+        });
+      const getCustomer = await Customer.findOne({
+        _id: getInvoice.customerDetails.cusID,
+      });
+      if (!getCustomer)
+        return callBack(null, {
+          status: "error",
+          message: "Customer not found",
+        });
+      if (body.editTotal < getInvoice.paidAmount)
+        return callBack(null, {
+          status: "error",
+          message: "You cant pay the amount",
+        });
+      console.log(getInvoice.paidAmount);
+
+      return callBack({ status: "success", data: getInvoice }, false);
+    } catch (error) {
+      return callBack(null, {
+        status: "error",
+        message: `something went wrong when trying to edit invoice`,
       });
     }
   }

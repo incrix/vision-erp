@@ -18,16 +18,46 @@ exports.getDateCreated = () => {
   };
 };
 
-exports.getAmountStatus = ({
-  totalPrice,
-  paidAmount,
-}) => {
+exports.getAmountStatus = ({ totalPrice, paidAmount }) => {
   if (totalPrice == paidAmount) {
     return "paid";
   } else if (paidAmount > 0) {
     return "partially";
   }
   return "pending";
+};
+exports.checkVerifyRemainingAmount = ({
+  resolve,
+  reject,
+  ledger,
+  invoice,
+  isAdd,
+  amount,
+}) => {
+  try {
+    if (ledger.amountRemaining >= amount) {
+      ledger.amountRemaining -= amount;
+      // if its false then we need to add invoice details to ledger
+      if (!isAdd)
+        ledger.documents.push({
+          id: invoice.id,
+          amount: invoice.totalPrice,
+        });
+      resolve({
+        status: "success",
+        message: "Amount successfully changed",
+        ledger: ledger,
+      });
+    } else {
+      console.log("calling update");
+      return reject({
+        status: "error",
+        message: "Insufficient balance to make payment",
+      });
+    }
+  } catch (error) {
+    return reject(null, { status: "error", message: error.message });
+  }
 };
 
 exports.createClientBalanceForInvoice = ({
@@ -72,6 +102,7 @@ exports.createClientBalanceForInvoice = ({
         ? "partially"
         : null,
     subTitle: "invoice",
+
     closingBalance: balanceValue,
   });
   //Credit or out   == you pay the customer && green , minus
@@ -84,24 +115,34 @@ exports.createClientBalanceForPayment = ({
   paidAmount,
   getCustomer,
   payment,
+  invoice,
 }) => {
-  const balanceAmount = getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance;
+  const balanceAmount =
+    getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance;
   getCustomer.ledger.push({
     id: payment.paymentId,
     amount: paidAmount,
     date: payment.date,
     mode: payment.mode,
     subTitle: "payment in",
+    documents: [
+      {
+        id: invoice.id,
+        amount: invoice.totalPrice,
+      },
+    ],
+    amountRemaining: 0,
     closingBalance: addCustomerBalance({
       balance: balanceAmount,
-      paidAmount,
+      paidAmount: paidAmount,
     }),
   });
+
   //Credit or out   == you pay the customer && green , minus
   // Debit or in == customer pay you && red , plus
 
   // getCustomer.balance.currentBalance = addCustomerBalance({
-  //   balance:balanceAmount, 
+  //   balance:balanceAmount,
   //   paidAmount,
   // });
   return getCustomer;
@@ -114,7 +155,7 @@ const addCustomerBalance = ({ balance, paidAmount }) => {
   return balance - paidAmount;
 };
 
-exports.addincreaseOrdecreaseBalance =({ balance, paidAmount }) => {
+exports.addincreaseOrdecreaseBalance = ({ balance, paidAmount }) => {
   return balance + paidAmount;
   // if (balance > 0) {
   //   return  balance - paidAmount;
@@ -126,5 +167,5 @@ exports.addincreaseOrdecreaseBalance =({ balance, paidAmount }) => {
   //   balance = Math.abs(balance) - paidAmount;
   //   balance = -balance;
   // }
-  // return balance 
+  // return balance
 };
