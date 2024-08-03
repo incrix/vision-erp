@@ -33,57 +33,63 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   getClient,
   paymentId,
   getPayment,
+  req,
   docId,
   resolve,
   reject,
-  isViaBalance,
+  isPaidAmountZero,
+  lastIndex,
 }) => {
   try {
-    // I am unable to change the balance amount in the current balance.
-
     let closingBalance = getClient.balance.currentBalance;
 
     await getClient.ledger.map((ledger) => {
       if (ledger.id == docId && ledger.isCancelled == false) {
         ledger.isCancelled = true;
-        ledger.documents = []
+
+        ledger.documents = [];
       } else if (ledger.id == paymentId && ledger.isCancelled == false) {
         ledger.amountRemaining = ledger.amount;
-        ledger.documents = []
+        ledger.documents = [];
       }
     });
 
-    if (
-      // lastIndex &&
-      // req.session.countBalance == invoicePaidAmount &&
-      isViaBalance == undefined
-    ) {
-      // console.log(getClient.ledger.filter((pay) => pay.id == getPayment.id));
-      let payableAmount = 0
+    if (isPaidAmountZero == undefined) {
+      let payableAmount =
+        req.session.payAmount == undefined ? 0 : req.session.payAmount;
+
       getPayment.documents = await [
         ...getPayment.documents.filter((payId) => {
-          if (payId.type == "erp") {if ( payId.id == docId ){
-             payableAmount = amount - (amount - (payId.payAmount + payableAmount)) 
-            
-            }}
-          if (payId.type == "erp") payId.id !== docId;    
-        }), ];
-      console.log(payableAmount);      
+          if (payId.type == "erp") {
+            if (payId.id == docId) {
+              payableAmount =
+                amount - (amount - (payId.payAmount + payableAmount));
+            }
+          }
+          if (payId.type == "erp") payId.id !== docId;
+        }),
+      ];
+      req.session.payAmount = req.session.payAmount + payableAmount;
       getClient.ledger[getClient.ledger.length - 1].closingBalance =
         await checkBalance(closingBalance, payableAmount);
-
-      getClient.balance.currentBalance = await checkBalance(
-        closingBalance,
-         payableAmount
-      );
-    } else if (isViaBalance !== undefined) {
+      if (lastIndex) {
+        getClient.balance.currentBalance = await checkBalance(
+          closingBalance,
+          payableAmount
+        );
+      }
+    } else if (isPaidAmountZero !== undefined) {
+     
       getClient.ledger[getClient.ledger.length - 1].closingBalance =
-        await checkBalance(closingBalance, amount);
+        await checkBalance(
+          getClient.ledger[getClient.ledger.length - 1].closingBalance,
+          amount
+        );
 
-      getClient.balance.currentBalance = await checkBalance(
-        closingBalance,
-        amount
-      );
+      // getClient.balance.currentBalance = await checkBalance(
+      //   closingBalance,
+      //   amount
+      // );
     }
 
     return (
@@ -95,16 +101,88 @@ exports.decreaseTheClientBalanceInOrOut = async ({
     );
   } catch (error) {
     console.log(error);
-    reject({ status: "error", message: error.message });
+    return reject({ status: "error", message: error.message });
   }
 };
+
+async function checkVerifyPayableAmount({
+  getPayment,
+  docId,
+  amount,
+  reject,
+  resolve,
+  payableAmount,
+}) {
+  try {
+    getPayment.documents = await [
+      ...getPayment.documents.filter((payId) => {
+        if (payId.type == "erp") {
+          if (payId.id == docId) {
+            payableAmount =
+              amount - (amount - (payId.payAmount + payableAmount));
+          }
+        }
+        if (payId.type == "erp") payId.id !== docId;
+      }),
+    ];
+    return resolve({
+      status: "success",
+      message: "Successfully created the document",
+      data: payableAmount,
+    });
+  } catch (error) {
+    reject({ status: "error", message: error });
+  }
+}
+
+async function callLedgerFun({ getClient, closingBalance, amount }) {
+  return await new Promise((resolve, reject) => {
+    (async () => {
+      try {
+        if (
+          getClient.ledger[getClient.ledger.length - 1].isCancelled == false
+        ) {
+          console.log("calling 1");
+          console.log(await checkBalance(closingBalance, amount));
+          getClient.ledger[getClient.ledger.length - 1].closingBalance =
+            await checkBalance(closingBalance, amount);
+          return resolve({
+            status: "success",
+            message: "successfully add ledger",
+            data: getClient,
+          });
+        } else if (
+          getClient.ledger[getClient.ledger.length - 1].isCancelled == true
+        ) {
+          for (var i = 0; i < getClient.ledger.length; ) {
+            if (
+              getClient.ledger[getClient.ledger.length - (1 + i)].isCancelled ==
+              false
+            ) {
+              getClient.ledger[getClient.ledger.length - 1].closingBalance =
+                await checkBalance(closingBalance, amount);
+              break;
+            } else continue;
+          }
+        }
+        return resolve({
+          status: "success",
+          message: "successfully add ledger",
+          data: getClient,
+        });
+      } catch (error) {
+        return reject({ status: "error", message: error.message });
+      }
+    })();
+  });
+}
 
 function checkBalance(balance, amount) {
   if (balance > 0) {
     return balance - amount;
   }
   return balance - amount;
-
+  // return   amount - balance
 }
 
 exports.addBalanceWithInandOut = ({ type, amount, getClient }) => {

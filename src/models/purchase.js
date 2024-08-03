@@ -106,6 +106,42 @@ const schema = mongoose.Schema(
             type: Number,
           },
         },
+        tax: {
+          cgst: {
+            percentage: {
+              type: Number,
+            },
+            amount: {
+              type: Number,
+            },
+          },
+          sgst: {
+            percentage: {
+              type: Number,
+            },
+            amount: {
+              type: Number,
+            },
+          },
+          igst: {
+            percentage: {
+              type: Number,
+            },
+            amount: {
+              type: Number,
+            },
+          },
+          cess: {
+            percentage: {
+              type: Number,
+              default: 0,
+            },
+            amount: {
+              type: Number,
+              default: 0,
+            },
+          },
+        },
         _id:false
       },
     ],
@@ -169,7 +205,15 @@ const schema = mongoose.Schema(
       },
     },
     tax: {
-      type: Number,
+      igst: {
+        type: Number,
+      },
+      cgst: {
+        type: Number,
+      },
+      sgst: {
+        type: Number,
+      },
     },
     status: {
       type: String,

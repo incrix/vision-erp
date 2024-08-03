@@ -275,7 +275,7 @@ module.exports = class Purchase {
               if (getPurchase.paymentTransactions[i].type !== "balance") {
                 req.body.paymentId = getPurchase.paymentTransactions[i].id;
                 
-                await services.payment.cancelPayment({
+                await services.payment.canInvoicePayment({
                   req,
                   totalPrice: getPurchase.totalPrice,
                   paidAmount: getPurchase.paidAmount,
@@ -293,7 +293,7 @@ module.exports = class Purchase {
               }
               //  If the payment is made through the closing balance, the function will call
               else
-                await services.payment.cancelPaymentForBalance({
+                await services.payment.canInvoicePaymentForBalance({
                   req,
                   totalPrice: getPurchase.totalPrice,
                   paidAmount: getPurchase.paidAmount,
@@ -323,7 +323,7 @@ module.exports = class Purchase {
       else if (getPurchase.paidAmount == 0) {
         const getPromise = await new Promise(function (resolve, reject) {
           (async () => {
-            await services.payment.cancelPaymentForBalance({
+            await services.payment.canInvoicePaymentForBalance({
               req,
               totalPrice: getPurchase.totalPrice,
               paidAmount: getPurchase.paidAmount,

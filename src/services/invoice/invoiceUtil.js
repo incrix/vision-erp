@@ -17,7 +17,11 @@ exports.getDateCreated = () => {
     getDateMilliseconds: currentUTCMilliseconds + 19800000,
   };
 };
-
+exports.customAmountCondition = ({id,amount,paymentList,idList}) => {
+  // Implement your custom condition logic here
+  // For example, return true if the amount is greater than 100
+  return paymentList[idList.indexOf(id)].id == id && amount >= paymentList[idList.indexOf(id)].amount;
+}
 exports.getAmountStatus = ({ totalPrice, paidAmount }) => {
   if (totalPrice == paidAmount) {
     return "paid";
@@ -49,7 +53,7 @@ exports.checkVerifyRemainingAmount = ({
         ledger: ledger,
       });
     } else {
-      console.log("calling update");
+  
       return reject({
         status: "error",
         message: "Insufficient balance to make payment",
@@ -77,8 +81,11 @@ exports.createClientBalanceForInvoice = ({
   //     Math.abs(getCustomer.balance.currentBalance) - totalAmount;
   //   getCustomer.balance.currentBalance = -getCustomer.balance.currentBalance;
   // }
-  let balanceValue =
-    getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance;
+  let balanceValue;
+  if (getCustomer.ledger.length > 0)
+    balanceValue =
+      getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance;
+  else balanceValue = getCustomer.balance.currentBalance;
   if (balanceValue > 0) {
     balanceValue = totalAmount + balanceValue;
     // getCustomer.balance.currentBalance = totalAmount + balanceValue;

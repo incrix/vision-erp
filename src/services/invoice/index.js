@@ -9,6 +9,7 @@ const {
   createClientBalanceForPayment,
   addincreaseOrdecreaseBalance,
   checkVerifyRemainingAmount,
+  customAmountCondition
 } = require("./invoiceUtil");
 
 const { getDateCreated } = require("../../utils/createDate");
@@ -271,16 +272,18 @@ module.exports = class Invoice {
           status: "error",
           message: "Invoice is already cancelled",
         });
+      // add the invoice to the body
+      req.body.docId = getInvoice.id;
+      // clear payAmount in session
+      req.session.payAmount = 0;
       if (getInvoice.paymentTransactions.length > 0) {
-        req.body.docId = getInvoice.id;
         for (let i = 0; i < getInvoice.paymentTransactions.length; i++) {
           const getPromise = await new Promise((resolve, reject) => {
             (async () => {
               //  If the payment is made through cash or UPI, the function will call
               if (getInvoice.paymentTransactions[i].type !== "balance") {
                 req.body.paymentId = getInvoice.paymentTransactions[i].id;
-                console.log("balance");
-                await services.payment.cancelPayment({
+                await services.payment.canInvoicePayment({
                   req,
                   totalPrice: getInvoice.totalPrice,
                   paidAmount: getInvoice.paidAmount,
@@ -289,32 +292,10 @@ module.exports = class Invoice {
                       getInvoice.paymentTransactions.length - 1
                     ] == getInvoice.paymentTransactions[i]
                       ? true
-                      : false,
+                      : false, // its was help to change the closing balance in the client transaction
+
                   callback: function (err, data) {
-                    if (data.status == "error") resolve(data);
-                    resolve(data);
-                  },
-                });
-              }
-              //  If the payment is made through the closing balance, the function will call
-              else {
-                await services.payment.cancelPaymentForBalance({
-                  req,
-                  totalPrice: getInvoice.totalPrice,
-                  paidAmount: getInvoice.paidAmount,
-                  whose: "customer",
-                  id: getInvoice.customerDetails.cusID,
-                  amount: getInvoice.paymentTransactions[i].amount,
-                  isViaBalance: true,
-                  lastIndex:
-                    getInvoice.paymentTransactions[
-                      getInvoice.paymentTransactions.length - 1
-                    ] == getInvoice.paymentTransactions[i]
-                      ? true
-                      : false,
-                  callback: function (err, data) {
-                    if (err) resolve(data);
-                    if (data.status == "error" || data == null) resolve(data);
+                    if (data.status == "error") reject(data);
                     resolve(data);
                   },
                 });
@@ -329,13 +310,12 @@ module.exports = class Invoice {
       else if (getInvoice.paidAmount == 0) {
         const getPromise = await new Promise(function (resolve, reject) {
           (async () => {
-            await services.payment.cancelPaymentForBalance({
+            await services.payment.canInvoicePaymentForBalance({
               req,
-              totalPrice: getInvoice.totalPrice,
-              paidAmount: getInvoice.paidAmount,
+              amount: getInvoice.totalPrice,
               whose: "customer",
               id: getInvoice.customerDetails.cusID,
-              lastIndex: true,
+              isPaidAmountZero: true,
               callback: function (err, data) {
                 if (err) resolve(data);
                 if (data.status == "error" || data == null) resolve(data);
@@ -348,11 +328,13 @@ module.exports = class Invoice {
         if (getPromise.status == "error" || getPromise == null)
           return callBack(null, getPromise);
       }
-
+      // clear payAmount in session
+      req.session.payAmount = 0;
       getInvoice.paymentTransactions = [];
       // change status to "cancelled"
       getInvoice.status = "cancelled";
       await getInvoice.save();
+
       callBack(
         { status: "success", message: "invoice cancelled successfully" },
         false
@@ -527,7 +509,7 @@ module.exports = class Invoice {
       if (getInvoice.status == "cancelled")
         return callBack(null, {
           status: "error",
-          message: "You could not pay your invoice while invoice was cancelled",
+          message: "You could not pay your invoice while invoice was cancel",
         });
       if (
         amount > getInvoice.totalPrice ||
@@ -540,8 +522,7 @@ module.exports = class Invoice {
         });
       const getClient = await Customer.findOne({
         _id: getInvoice.customerDetails.cusID,
-      });
-
+      });      
       if (!getClient)
         return callBack(null, {
           status: "error",
@@ -552,12 +533,11 @@ module.exports = class Invoice {
           status: "error",
           message: "Please select a payment list",
         });
-      const idList = [...paymentList.map((filter) => filter.id)];
-      const getPaymentList = await Payment.find({
+      const idList = [...paymentList.map((filter) => filter.id)]
+      let getPaymentList = await Payment.find({
         orgId: req.session.orgId,
         id: { $in: idList },
       });
-
       if (
         getPaymentList.length <= 0 ||
         getPaymentList.length !== paymentList.length
@@ -567,6 +547,11 @@ module.exports = class Invoice {
           message: "Please give Valuable a payment list",
         });
 
+         getPaymentList = [...getPaymentList.filter(payment => {
+          return customAmountCondition({amount:payment.amount,id:payment.id,paymentList,idList});
+        })]
+        console.log(getPaymentList);
+   
       getInvoice.status = await getAmountStatus({
         totalPrice: getInvoice.totalPrice,
         paidAmount: getInvoice.paidAmount + amount,
@@ -623,7 +608,8 @@ module.exports = class Invoice {
             getPaymentList
               .map((fil) => fil.id)
               .indexOf(getClient.ledger[index].id)
-          ].save();
+          ]
+          // .save();
         }
       }
       //add invoice payment details into the client ledger  list
@@ -643,8 +629,8 @@ module.exports = class Invoice {
         paidAmount: amount,
       });
 
-      await getClient.save();
-      await getInvoice.save();
+      // await getClient.save();
+      // await getInvoice.save();
 
       // console.log(getInvoice);
       // console.log(getPaymentList.documents);

@@ -10,6 +10,7 @@ const schema = mongoose.Schema(
     id: {
       type: String,
       required: true,
+      unique: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -232,5 +233,3 @@ const schema = mongoose.Schema(
 );
 
 module.exports = mongoose.model("Invoice", schema);
-
-

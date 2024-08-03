@@ -135,7 +135,7 @@ module.exports = class Payment {
     }
   }
 
-  // async cancelPaymentForManuel({ req, callback }) {
+  // async canInvoicePaymentForManuel({ req, callback }) {
   //   try {
   //     const getPayment = await payment.findOne({
   //       orgId: req.session.orgId,
@@ -218,9 +218,15 @@ module.exports = class Payment {
   //   }
   // }
 
-  async cancelPayment({ req, totalPrice, lastIndex, callback, paidAmount }) {
+  async canInvoicePayment({
+    req,
+    totalPrice,
+    callback,
+    paidAmount,
+    getPayableAmount,
+    lastIndex,
+  }) {
     try {
-     
       const getPayment = await payment.findOne({
         orgId: req.session.orgId,
         id: req.body.paymentId,
@@ -260,16 +266,18 @@ module.exports = class Payment {
               paidAmount,
               getClient,
               req,
+              lastIndex,
               paymentId: getPayment.id,
               docId: req.body.docId, // its created from manually so dont confuse
               totalPrice,
-              lastIndex,
+              getPayableAmount,
             });
           })();
         });
 
         // console.log(getPayment);
-        console.log(getClient.ledger);
+        // console.log(getClient.balance);
+      
         if (getWait.status === "success") {
           await getClient.save();
           await getPayment.save();
@@ -279,6 +287,7 @@ module.exports = class Payment {
             message: getWait.message,
           });
       }
+
       return callback(
         {
           status: "success",
@@ -311,16 +320,13 @@ module.exports = class Payment {
     }
   }
 
-  async cancelPaymentForBalance({
+  async canInvoicePaymentForBalance({
     req,
     callback,
-    invoiceAmount,
-    paidAmount,
     whose,
     id,
     amount,
-    lastIndex,
-    isViaBalance,
+    isPaidAmountZero,
   }) {
     try {
       let getClient = await getClientVerify({
@@ -338,21 +344,20 @@ module.exports = class Payment {
       const getWait = await new Promise((resolve, reject) => {
         (async () => {
           getClient = await decreaseTheClientBalanceInOrOut({
-            amount: isViaBalance == undefined ? 0 : amount,
-            paidAmount,
+            amount,
             getClient,
             req,
             docId: req.body.docId,
-            invoiceAmount,
-            lastIndex,
-            resolve, reject,
-            isViaBalance,
+            resolve,
+            reject,
+            isPaidAmountZero,
           });
         })();
       });
-      //  console.log(getClient)
+
+      // console.log(getClient.ledger)
       if (getWait.status === "success") {
-        // await getClient.save();
+         await getClient.save();
       } else
         return callback(null, {
           status: "error",
