@@ -125,6 +125,7 @@ async function checkVerifyPayableAmount({
         if (payId.type == "erp") payId.id !== docId;
       }),
     ];
+    
     return resolve({
       status: "success",
       message: "Successfully created the document",

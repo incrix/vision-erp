@@ -28,9 +28,10 @@ module.exports = class Invoice {
             callBack,
             services,
           });
+        
           if (getValue.status == "error") {
             isCallBack = false;
-            callBack(null, getValue);
+          return  callBack(null, getValue);
           }
         }
         isCallBack &&
@@ -45,7 +46,7 @@ module.exports = class Invoice {
       await sendAllCusID(callBack);
     } catch (error) {
       console.log(error);
-      callBack(null, { status: "error", message: "Can't Create Invoice" });
+      callBack(null, { status: "error", message: error.message });
     }
   }
 
@@ -63,7 +64,7 @@ module.exports = class Invoice {
           });
 
         if (!getCustomer)
-          return resolve({ status: "error", message: "Customer Not Found" });
+          return reject({ status: "error", message: "Customer Not Found " });
         return await invoice
           .create({
             orgId: req.session.orgId,
@@ -157,7 +158,7 @@ module.exports = class Invoice {
               })();
             });
             if (getWaiting.status == "error") return callBack(getWaiting);
-            if (body.paidAmount > 0)
+            if (body.paidAmount > 0 )
               return await services.payment
                 .createPayment({
                   orgId: req.session.orgId,
@@ -178,8 +179,10 @@ module.exports = class Invoice {
                   ],
                 })
                 .then(async (getPayResult) => {
+                  if(getPayResult.status == "error")  return reject(getPayResult)
                   new Promise((resolve, reject) => {
                     (async () => {
+
                       getCustomer.ledger[
                         getCustomer.ledger.length - 1
                       ].documents.push({

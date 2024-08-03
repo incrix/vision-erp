@@ -98,13 +98,19 @@ exports.checkTheInput = (req, res, next) => {
       }
       // transactionDetails
       if (key == "transactionDetails") {
-        if (body[key].type !== undefined)
+        if (body[key].type !== undefined) {
           if (typeof body[key].type !== "string")
             return res.status(400).json({
               status: "error",
-              message: `Please enter valid type `,
+              message: `Please enter valid transaction type `,
             });
-        // if (body[key].type !=="Net Banking" || "Cash" ||"UPI" || "EMI" || "Cheque")
+          if (body[key].type == "" || !process.env.PAYMENT_TYPE.includes(body[key].type))
+            return res.status(400).json({
+              status: "error",
+              message: `Please enter valid transaction type `,
+            });
+        }
+        // if (body[key].type !==)
         //   return res.status(400).json({
         //     status: "error",
         //     message: `can't make transaction through ${body[key].type}`,
