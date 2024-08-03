@@ -17,11 +17,15 @@ exports.getDateCreated = () => {
     getDateMilliseconds: currentUTCMilliseconds + 19800000,
   };
 };
-exports.customAmountCondition = ({id,amount,paymentList,idList}) => {
+exports.customAmountCondition = ({ id, amount, paymentList, idList }) => {
   // Implement your custom condition logic here
   // For example, return true if the amount is greater than 100
-  return paymentList[idList.indexOf(id)].id == id && amount >= paymentList[idList.indexOf(id)].amount;
-}
+  return (
+    paymentList[idList.indexOf(id)].id == id &&
+    amount >= paymentList[idList.indexOf(id)].amount
+  
+  );
+};
 exports.getAmountStatus = ({ totalPrice, paidAmount }) => {
   if (totalPrice == paidAmount) {
     return "paid";
@@ -53,7 +57,6 @@ exports.checkVerifyRemainingAmount = ({
         ledger: ledger,
       });
     } else {
-  
       return reject({
         status: "error",
         message: "Insufficient balance to make payment",

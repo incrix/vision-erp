@@ -84,7 +84,7 @@ module.exports = class Invoice {
                   : getCustomer.companyDetails,
             },
             transactionDetails: {
-              mode: body.transactionDetails.type,
+              mode: body.transactionDetails.type == "" ? undefined :body.transactionDetails.type,
             },
             items: body.items,
             additionalCharges: {
