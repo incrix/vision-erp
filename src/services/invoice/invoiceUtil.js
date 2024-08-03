@@ -118,11 +118,10 @@ exports.createClientBalanceForInvoice = ({
   getCustomer.balance.currentBalance = balanceValue;
   //Credit or out   == you pay the customer && green , minus
   // Debit or in == customer pay you && red , plus
-
   return getCustomer;
 };
 
-exports.createClientBalanceForPayment = ({
+exports.createClientBalanceForPayment = async ({
   paidAmount,
   getCustomer,
   payment,
@@ -143,12 +142,15 @@ exports.createClientBalanceForPayment = ({
       },
     ],
     amountRemaining: 0,
-    closingBalance: addCustomerBalance({
+    closingBalance:await addCustomerBalance({
       balance: balanceAmount,
       paidAmount: paidAmount,
-    }),
+    })
   });
-
+  getCustomer.balance.currentBalance = await addCustomerBalance({
+    balance: balanceAmount,
+    paidAmount: paidAmount,
+  })
   //Credit or out   == you pay the customer && green , minus
   // Debit or in == customer pay you && red , plus
 
