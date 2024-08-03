@@ -53,6 +53,24 @@ module.exports = class Invoice {
     }
   }
 
+  async getInvoice({ invoiceId, req, callBack, services }) {
+    try {
+      
+      const getInvoice = await invoice.findOne({
+        orgId: req.session.orgId,
+        _id: req.query.id,
+      });
+      if (!getInvoice)
+        return callBack(null, {
+          status: "error",
+          message: "Invoice Not Found",
+        });
+      return callBack(null, getInvoice);
+    } catch (error) {
+      console.log(error);
+      callBack(null, { status: "error", message: error.message });
+    }
+  }
   async createInvoiceOneByOne({ body, cusID, req, callBack, services }) {
     return new Promise(async (resolve, reject) => {
       (async () => {
@@ -63,7 +81,7 @@ module.exports = class Invoice {
         if (body.totalPrice < body.paidAmount)
           return resolve({
             status: "error",
-            message: "The Incorrect Paid Amount",
+            message: "The payment should be less than the total amount",
           });
 
         if (!getCustomer)

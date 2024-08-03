@@ -69,6 +69,9 @@ const schema = mongoose.Schema(
         type: String,
         enum: ["Net Banking", "Cash", "UPI", "EMI", "Cheque"],
       },
+      notes:{
+        type: String,
+      }
     },
     items: [
       {

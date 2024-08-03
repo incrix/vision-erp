@@ -102,12 +102,12 @@ exports.checkTheInput = (req, res, next) => {
           if (typeof body[key].type !== "string")
             return res.status(400).json({
               status: "error",
-              message: `Please enter valid transaction type `,
+              message: `Please enter valid payment mode`,
             });
           if (body[key].type == "" || !process.env.PAYMENT_TYPE.includes(body[key].type))
             return res.status(400).json({
               status: "error",
-              message: `Please enter valid transaction type `,
+              message: `Please enter valid payment mode`,
             });
         }
 
@@ -122,7 +122,24 @@ exports.checkTheInput = (req, res, next) => {
         if(!Array.isArray(body[key]) || body[key].length == 0){         
           return res.status(400).json({
             status: "error",
-            message: "Please Add a Product ",
+            message: "Please add a product ",
+          });
+        }
+      } 
+      
+      if(key == "cusId"){
+        if(!Array.isArray(body[key]) || body[key].length == 0){         
+          return res.status(400).json({
+            status: "error",
+            message: "Please add a Customer ",
+          });
+        }
+      } 
+      if(key == "venId"){
+        if(!Array.isArray(body[key]) || body[key].length == 0){         
+          return res.status(400).json({
+            status: "error",
+            message: "Please add a Vendor ",
           });
         }
       } 
@@ -167,6 +184,7 @@ exports.checkTheInput = (req, res, next) => {
             message: "Company GSTIN should be a text",
           });
       }
+      
       // balance
       if (key == "balance") {
         if (
@@ -223,6 +241,7 @@ exports.checkTheInput = (req, res, next) => {
             message: `city should be a text`,
           });
       }
+    
       // shipping Address
       if (key == "shippingAddress") {
         for (var i = 0; i < body[key].length; i++) {
