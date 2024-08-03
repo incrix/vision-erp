@@ -110,11 +110,7 @@ exports.checkTheInput = (req, res, next) => {
               message: `Please enter valid transaction type `,
             });
         }
-        // if (body[key].type !==)
-        //   return res.status(400).json({
-        //     status: "error",
-        //     message: `can't make transaction through ${body[key].type}`,
-        //   });
+
         if (body[key].totalPrice !== undefined)
           if (typeof body[key].totalPrice !== "number")
             return res.status(400).json({
@@ -122,6 +118,14 @@ exports.checkTheInput = (req, res, next) => {
               message: `Please enter valid totalPrice`,
             });
       }
+      if(key == "items"){
+        if(!Array.isArray(body[key])){
+          return res.status(400).json({
+            status: "error",
+            message: "Please Add a Product ",
+          });
+        }
+      } 
       // additionalCharges
       if (key == "additionalCharges") {
         if (body[key].package) {

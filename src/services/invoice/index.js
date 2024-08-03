@@ -18,6 +18,9 @@ module.exports = class Invoice {
   async createInvoice({ body, req, callBack, services }) {
     try {
       const cusID = body.cusId;
+      if (cusID.length < 0) {
+        return callBack(null, { status: "error", message: "Please Select Customer" });
+      }
       const sendAllCusID = async (callBack) => {
         let isCallBack = true;
         for (let i = 0; i < cusID.length; i++) {
