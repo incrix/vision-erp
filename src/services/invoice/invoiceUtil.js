@@ -115,6 +115,7 @@ exports.createClientBalanceForInvoice = ({
 
     closingBalance: balanceValue,
   });
+  getCustomer.balance.currentBalance = balanceValue;
   //Credit or out   == you pay the customer && green , minus
   // Debit or in == customer pay you && red , plus
 
