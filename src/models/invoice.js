@@ -10,7 +10,7 @@ const schema = mongoose.Schema(
     id: {
       type: String,
       required: true,
-      unique: true,
+      // unique: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
