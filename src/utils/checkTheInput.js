@@ -119,7 +119,7 @@ exports.checkTheInput = (req, res, next) => {
             });
       }
       if(key == "items"){
-        if(!Array.isArray(body[key])){
+        if(!Array.isArray(body[key]) || body[key].length == 0){         
           return res.status(400).json({
             status: "error",
             message: "Please Add a Product ",
