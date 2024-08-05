@@ -28,6 +28,18 @@ exports.getClientVerify = async ({ whose, id, req }) => {
   return null;
 };
 
+exports.payAmountIn =({getPayment,getClient,resolve, reject,amount}) => {
+  try {
+    let balanceValue = getClient.balance.currentBalance
+      balanceValue = balanceValue - amount;
+      getClient.balance.currentBalance = balanceValue;
+     
+      resolve({status:"success",message:"add balance successfully"})
+  } catch (error) {
+   return reject({status: 'error', message: error.message})
+  }
+}
+
 exports.decreaseTheClientBalanceInOrOut = async ({
   amount,
   getClient,
@@ -86,10 +98,6 @@ exports.decreaseTheClientBalanceInOrOut = async ({
           amount
         );
 
-      // getClient.balance.currentBalance = await checkBalance(
-      //   closingBalance,
-      //   amount
-      // );
     }
 
     return (

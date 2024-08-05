@@ -53,13 +53,14 @@ module.exports = class Invoice {
     }
   }
 
-  async getInvoice({ invoiceId, req, callBack, services }) {
+  async getInvoice({req, callBack}) {
     try {
       
       const getInvoice = await invoice.findOne({
         orgId: req.session.orgId,
         _id: req.query.id,
       });
+   
       if (!getInvoice)
         return callBack(null, {
           status: "error",
