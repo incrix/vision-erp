@@ -21,6 +21,9 @@ module.exports = class Invoice {
       if (cusID.length < 0) {
         return callBack(null, { status: "error", message: "Please Select Customer" });
       }
+      // if(body.totalPrice <= 0) {
+      //   return callBack(null, { status: "error", message: "Total Price must be greater than 0" });
+      // }
       const sendAllCusID = async (callBack) => {
         let isCallBack = true;
         for (let i = 0; i < cusID.length; i++) {
@@ -288,7 +291,7 @@ module.exports = class Invoice {
       });
 
       if (!getInvoice)
-        callBack(null, {
+       return callBack(null, {
           status: "error",
           message: "something went wrong with organization Id Or Invoice Id",
         });
@@ -360,7 +363,7 @@ module.exports = class Invoice {
       getInvoice.status = "cancelled";
       await getInvoice.save();
 
-      callBack(
+     return callBack(
         { status: "success", message: "invoice cancelled successfully" },
         false
       );
@@ -654,8 +657,8 @@ module.exports = class Invoice {
         paidAmount: amount,
       });
 
-      // await getClient.save();
-      // await getInvoice.save();
+      await getClient.save();
+      await getInvoice.save();
 
       // console.log(getInvoice);
       // console.log(getPaymentList.documents);

@@ -1,7 +1,7 @@
 const Vendor = require("../../models/vendor");
 const Customer = require("../../models/customer");
 const Invoice = require("../../models/invoice");
-
+const Purchase = require("../../models/purchase");
 exports.getClientVerify = async ({ whose, id, req }) => {
   if (whose == "customer") {
     return await Customer.findOne({
@@ -28,17 +28,190 @@ exports.getClientVerify = async ({ whose, id, req }) => {
   return null;
 };
 
-exports.payAmountIn =({getPayment,getClient,resolve, reject,amount}) => {
+exports.payInForInvoice = async ({
+  reject,
+  getClient,
+  docList,
+  amount,
+  id,
+}) => {
   try {
-    let balanceValue = getClient.balance.currentBalance
-      balanceValue = balanceValue - amount;
-      getClient.balance.currentBalance = balanceValue;
-     
-      resolve({status:"success",message:"add balance successfully"})
+    const idList = [...docList.map((doc) => doc.docId)];
+
+    const getInvoiceList = await Invoice.find({
+      orgId: getClient.orgId,
+      id: { $in: idList },
+    });
+    if (idList.length !== getInvoiceList.length)
+      return reject({
+        status: "error",
+        message: "Please check the invoice list",
+      });
+    if (
+      getInvoiceList.length !==
+      getInvoiceList.filter(
+        (invoice) => invoice.customerDetails.cusID.valueOf() == id.valueOf()
+      ).length
+    )
+      return reject({
+        status: "error",
+        message: " Something  went wrong with the client invoice",
+      });
+    let requiredAmount = 0;
+    getInvoiceList.map((invoice, index) => {
+      if (invoice.status == "paid" || invoice.status == "cancelled")
+        return reject({
+          status: "error",
+          message: `You can't pay invoice when it was already ${invoice.status}`,
+        });
+      if (invoice.id == docList[index].docId) {
+        const balanceAmount = invoice.totalPrice - invoice.paidAmount;
+        console.log(docList[index].remainingAmount, balanceAmount);
+        if (docList[index].remainingAmount > balanceAmount)
+          return reject({
+            status: "error",
+            message:
+              "The pay amount is higher than the invoice remaining amount",
+          });
+        requiredAmount += balanceAmount;
+      }
+    });
+    // console.log(requiredAmount , amount);
+    //     if (requiredAmount >= amount)
+    //       return reject({ status: "error", message: "Invalid amount" });
+    return getInvoiceList;
   } catch (error) {
-   return reject({status: 'error', message: error.message})
+    return reject({ status: "error", message: error.message });
   }
-}
+};
+
+exports.payInForPurchase = async ({ reject, getClient, docList, amount }) => {
+  try {
+    const idList = [...docList.map((doc) => doc.docId)];
+
+    const getPurchaseList = await Purchase.find({
+      orgId: getClient.orgId,
+      id: { $in: idList },
+    });
+    if (idList.length !== getPurchaseList.length)
+      return reject({
+        status: "error",
+        message: "Please check the purchase list",
+      });
+    let requiredAmount = 0;
+    getPurchaseList.map((purchase, index) => {
+      if (purchase.status == "paid" || purchase.status == "cancelled")
+        return reject({
+          status: "error",
+          message: `You can't pay purchase when it was already ${purchase.status}`,
+        });
+      if (purchase.id == docList[index].docId) {
+        const balanceAmount = purchase.totalPrice - purchase.paidAmount;
+        if (docList[index].remainingAmount >= balanceAmount)
+          return reject({
+            status: "error",
+            message:
+              "The pay amount is higher than the purchase remaining amount",
+          });
+        requiredAmount += balanceAmount;
+      }
+    });
+    console.log(requiredAmount, amount);
+    if (requiredAmount >= amount)
+      return reject({ status: "error", message: "Invalid amount" });
+
+    return getPurchaseList;
+  } catch (error) {
+    return reject({ status: "error", message: error.message });
+  }
+};
+
+exports.payAmountIn = async ({
+  docList,
+  amount,
+  getDocList,
+  getPayment,
+  getClient,
+  resolve,
+  reject,
+}) => {
+  try {
+    let balanceValue = getClient.balance.currentBalance;
+    balanceValue = balanceValue - amount;
+    const list = [];
+    getClient.balance.currentBalance = balanceValue;
+    if (getDocList.length > 0) {
+      await getDocList.map(async (doc, index) => {
+        if (doc.totalPrice < doc.paidAmount + docList[index].remainingAmount)
+          return reject({
+            status: "error",
+            message: "something went wrong payment",
+          });
+        doc.status = await getAmountStatus({
+          totalPrice: doc.totalPrice,
+          paidAmount: doc.paidAmount + docList[index].remainingAmount,
+        });
+        doc.paidAmount = doc.paidAmount + docList[index].remainingAmount;
+        doc.paymentTransactions.push({
+          type: "payment",
+          id: getPayment.id,
+          amount: getPayment.amount,
+        });
+        getPayment.documents.push({
+          type: "erp",
+          id: doc.id,
+          docAmount: doc.totalPrice,
+          payAmount: docList[index].remainingAmount,
+        });
+        getClient.ledger.map((ledger) => {
+          if (ledger.id == doc.id) {
+            ledger.status = doc.status;
+            ledger.amountRemaining = doc.totalPrice - doc.paidAmount;
+            ledger.documents.push({
+              id: getPayment.id,
+              amount: getPayment.amount,
+            });
+          }
+        });
+        list.push({
+          id: doc.id,
+          amount: doc.totalPrice,
+        });
+        await doc.save();
+      });
+    }
+    let getTotalAmount = [...docList.map((get) => get.remainingAmount)];
+    getTotalAmount = getTotalAmount.reduce((a, b) => a + b, 0);
+
+    getClient.ledger.push({
+      id: getPayment.id,
+      amount: getPayment.amount,
+      date: getPayment.date,
+      mode: getPayment.mode,
+      subTitle: "payment in",
+      documents: getDocList.length > 0 ? list : [],
+      amountRemaining:
+        getDocList.length > 0 ? getPayment.amount - getTotalAmount : 0,
+      closingBalance: balanceValue,
+    });
+
+   
+    await getClient.save();
+    await getPayment.save();
+    resolve({ status: "success", message: "add balance successfully" });
+  } catch (error) {
+    return reject({ status: "error", message: error.message });
+  }
+};
+
+const getAmountStatus = ({ totalPrice, paidAmount }) => {
+  if (totalPrice == paidAmount) {
+    return "paid";
+  } else if (paidAmount > 0) {
+    return "partially";
+  }
+  return "pending";
+};
 
 exports.decreaseTheClientBalanceInOrOut = async ({
   amount,
@@ -91,13 +264,14 @@ exports.decreaseTheClientBalanceInOrOut = async ({
         );
       }
     } else if (isPaidAmountZero !== undefined) {
-     
-      getClient.ledger[getClient.ledger.length - 1].closingBalance =
+      const balanceValue = (getClient.balance.currentBalance =
         await checkBalance(
           getClient.ledger[getClient.ledger.length - 1].closingBalance,
           amount
-        );
-
+        ));
+      getClient.ledger[getClient.ledger.length - 1].closingBalance =
+        balanceValue;
+      getClient.balance.currentBalance = balanceValue;
     }
 
     return (
@@ -113,79 +287,6 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   }
 };
 
-async function checkVerifyPayableAmount({
-  getPayment,
-  docId,
-  amount,
-  reject,
-  resolve,
-  payableAmount,
-}) {
-  try {
-    getPayment.documents = await [
-      ...getPayment.documents.filter((payId) => {
-        if (payId.type == "erp") {
-          if (payId.id == docId) {
-            payableAmount =
-              amount - (amount - (payId.payAmount + payableAmount));
-          }
-        }
-        if (payId.type == "erp") payId.id !== docId;
-      }),
-    ];
-    
-    return resolve({
-      status: "success",
-      message: "Successfully created the document",
-      data: payableAmount,
-    });
-  } catch (error) {
-    reject({ status: "error", message: error });
-  }
-}
-
-async function callLedgerFun({ getClient, closingBalance, amount }) {
-  return await new Promise((resolve, reject) => {
-    (async () => {
-      try {
-        if (
-          getClient.ledger[getClient.ledger.length - 1].isCancelled == false
-        ) {
-          console.log("calling 1");
-          console.log(await checkBalance(closingBalance, amount));
-          getClient.ledger[getClient.ledger.length - 1].closingBalance =
-            await checkBalance(closingBalance, amount);
-          return resolve({
-            status: "success",
-            message: "successfully add ledger",
-            data: getClient,
-          });
-        } else if (
-          getClient.ledger[getClient.ledger.length - 1].isCancelled == true
-        ) {
-          for (var i = 0; i < getClient.ledger.length; ) {
-            if (
-              getClient.ledger[getClient.ledger.length - (1 + i)].isCancelled ==
-              false
-            ) {
-              getClient.ledger[getClient.ledger.length - 1].closingBalance =
-                await checkBalance(closingBalance, amount);
-              break;
-            } else continue;
-          }
-        }
-        return resolve({
-          status: "success",
-          message: "successfully add ledger",
-          data: getClient,
-        });
-      } catch (error) {
-        return reject({ status: "error", message: error.message });
-      }
-    })();
-  });
-}
-
 function checkBalance(balance, amount) {
   if (balance > 0) {
     return balance - amount;
@@ -198,29 +299,5 @@ exports.addBalanceWithInandOut = ({ type, amount, getClient }) => {
   if (type == "in") getClient.balance.gave = getClient.balance.gave + amount;
   else if (type == "out")
     getClient.balance.borrow = getClient.balance.borrow + amount;
-  return getClient;
-};
-
-exports.checkTheBalanceWithInandOutForCancelPay = ({
-  paidAmount,
-  totalAmount,
-  getClient,
-}) => {
-  const getBalanceAmount = totalAmount - paidAmount;
-
-  if (getBalanceAmount == 0) {
-    if (getClient.balance.gave > paidAmount)
-      getClient.balance.gave = getClient.balance.gave - paidAmount;
-    else getClient.balance.gave = paidAmount - getClient.balance.gave;
-    return getClient;
-  }
-  if (getClient.balance.gave > paidAmount)
-    getClient.balance.gave = getClient.balance.gave - paidAmount;
-  else getClient.balance.gave = paidAmount - getClient.balance.gave;
-
-  if (getClient.balance.borrow > paidAmount)
-    getClient.balance.borrow = getClient.balance.borrow - paidAmount;
-  else getClient.balance.borrow = paidAmount - getClient.balance.borrow;
-
   return getClient;
 };

@@ -14,7 +14,7 @@ const router = require("./router/index.js");
 const User = require("./services/user");
 const MailSender = require("./services/email/index.js");
 const { sessionExpire, userIsLogin } = require("./middleware.js");
-const {checkTheInput} = require("./utils/checkTheInput.js")
+const { checkTheInput } = require("./utils/checkTheInput.js");
 const methodOverride = require("method-override");
 const Product = require("./services/product/index.js");
 const Customer = require("./services/customer/index.js");
@@ -23,9 +23,7 @@ const Invoice = require("./services/invoice/index.js");
 const Payment = require("./services/payment/index.js");
 const Purchase = require("./services/purchase/index.js");
 
-
 module.exports = (config) => {
-  
   const getConnection = connectDB({
     url: config.databaseURL,
     poolSize: config.poolSize,
@@ -38,15 +36,13 @@ module.exports = (config) => {
 
   // middleware Connection
   app.use(
-    cors(
-      {
-    //    // origin:"https://d1dp27wvujqxte.cloudfront.net",
-    //    // origin:'https://d1ucsdf3cm5a5l.cloudfront.net',
-    //   //origin: 'http://erp-client-3.s3-website.ap-south-1.amazonaws.com',
-       origin: 'http://localhost:3000', // Replace with your frontend domain
+    cors({
+      //    // origin:"https://d1dp27wvujqxte.cloudfront.net",
+      //    // origin:'https://d1ucsdf3cm5a5l.cloudfront.net',
+      //   //origin: 'http://erp-client-3.s3-website.ap-south-1.amazonaws.com',
+      origin: "http://localhost:3000", // Replace with your frontend domain
       credentials: true,
-    }
-  )
+    })
   );
   app.use(compression());
   app.use(express.json());
@@ -72,14 +68,13 @@ module.exports = (config) => {
     pass: config.pass,
   });
 
- 
   const vendor = new Vendor();
   const user = new User({ otp, mailSender });
   const product = new Product();
   const customer = new Customer();
   const invoice = new Invoice();
-  const payment = new Payment()
-  const purchase = new Purchase()
+  const payment = new Payment();
+  const purchase = new Purchase();
   const services = {
     user,
     mailSender,
@@ -89,7 +84,7 @@ module.exports = (config) => {
     getConnection,
     invoice,
     payment,
-    purchase
+    purchase,
   };
 
   // router
@@ -99,25 +94,21 @@ module.exports = (config) => {
     console.log(req.session.counters);
     res.send("expire");
   });
-  app.use("/api/", sessionExpire,checkTheInput,router({ services, passport, log }));
+  app.use(
+    "/api/",
+    sessionExpire,
+    checkTheInput,
+    router({ services, passport, log })
+  );
 
   app.get("/api/user-isLogin", userIsLogin);
 
   // logout
   app.get("/api/logout", (req, res) => {
-    
     req.session.destroy();
     res.json({ status: "success", message: "logged out successfully" });
   });
   // app.use("/api/",router({ services, passport,log }));
 
-
-
-
   return app;
-}
-
-
-
-
-
+};

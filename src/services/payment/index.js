@@ -6,6 +6,9 @@ const {
   addBalanceWithInandOut,
   checkTheBalanceWithInandOutForCancelPay,
   payAmountIn,
+  payInForPurchase,
+  payInForInvoice,
+
 } = require("./payUtil");
 const { getDateCreated } = require("../../utils/createDate");
 const { generatePaymentId } = require("../../utils/generateID");
@@ -51,6 +54,7 @@ module.exports = class Payment {
           id: response._id,
           paymentId: response.id,
           amount: response.amount,
+          data:response
         };
       })
       .catch((error) => {
@@ -91,7 +95,7 @@ module.exports = class Payment {
               amount: req.body.amount,
               getClient,
               type: req.body.type,
-              data:getPayResult
+              data: getPayResult,
             });
 
             await getClient.save();
@@ -137,7 +141,7 @@ module.exports = class Payment {
     }
   }
   // Payment in
-  async createPayIn({ req, callback }) {
+  async createPayIn({ req ,callback }) {
     try {
       // Debit or in == customer pay you && red && -
       if (req.body.whose == undefined)
@@ -156,32 +160,52 @@ module.exports = class Payment {
         (async () => {
           if (req.body.amount <= 0)
             reject("Amount should be greater than zero");
-          
-       const getPayment = await this.createPayment({
+         let getDocList 
+          if(req.body.docList.length > 0)
+            getDocList = req.body.whose == "customer" ?  await payInForInvoice({
+            reject,
+            ...req.body,
+            getClient,
+          }) : payInForPurchase({
+            reject,
+            ...req.body,
+            getClient,
+          });
+          const getPayment = await payment({
             orgId: req.session.orgId,
+            id: await generatePaymentId({
+              orgId: req.session.orgId,
+              type: req.body.transactionDetails.type,
+            }),
             clientId: getClient._id,
             name: getClient.name,
-            amount: amount,
-            mode: body.transactionDetails.mode,
+            amount: req.body.amount,
+            mode: req.body.transactionDetails.mode,
             date: req.body.date,
-            type: body.transactionDetails.type,
+            type: req.body.transactionDetails.type,
             whose: req.body.whose,
-            description: body.transactionDetails.notes == undefined ? "" :body.transactionDetails.notes,
+            description: req.body.transactionDetails.notes == undefined ? "" :req.body.transactionDetails.notes,
           })
-          .then(getPayment => getPayment.data)
-          .catch(error => reject({status:"error",message:error.message}));
+          // .then(getPayment => {
+       
+          //   return getPayment.data;
+          // })
+          // .catch(error => reject({status:"error",message:error.message}));
+    
           await payAmountIn({
             getClient,
             getPayment,
+            getDocList,
             resolve,
             reject,
-            amount: req.body.amount,
+            ...req.body,
           });
+         return resolve({status:"success",message:"Invoice successfully received"})
         })();
       });
       if (getPromise.status == "error") return callback(null, getPromise);
-   
-      return callback(getPromise, false);
+      return callback(getPromise,false)
+      // return callback(getPromise, false);
     } catch (error) {
       console.log(error);
       return callback(null, { status: "error", message: error.message });
@@ -329,7 +353,7 @@ module.exports = class Payment {
 
         // console.log(getPayment);
         // console.log(getClient.balance);
-
+        // console.log(getClient.ledger);
         if (getWait.status === "success") {
           await getClient.save();
           await getPayment.save();

@@ -90,6 +90,10 @@ const schema = mongoose.Schema(
           type: Number,
           required: true,
         },
+        unitPrice:{
+          type: Number,
+          required: true,
+        },
         quantity: {
           type: Number,
           required: true,
