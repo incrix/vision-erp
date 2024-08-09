@@ -8,6 +8,7 @@ const {
   payAmountIn,
   payInForPurchase,
   payInForInvoice,
+  payAmountOut
 
 } = require("./payUtil");
 const { getDateCreated } = require("../../utils/createDate");
@@ -190,6 +191,59 @@ module.exports = class Payment {
             getClient,
             getPayment,
             getDocList,
+            resolve,
+            reject,
+            ...req.body,
+          });
+         return resolve({status:"success",message:"Invoice successfully received"})
+        })();
+      });
+      if (getPromise.status == "error") return callback(null, getPromise);
+      return callback(getPromise,false)
+      // return callback(getPromise, false);
+    } catch (error) {
+      console.log(error);
+      return callback(null, { status: "error", message: error.message });
+    }
+  }
+  async createPayOut({ req ,callback }) {
+    try {
+      // Debit or in == customer pay you && red && -
+      if (req.body.whose == undefined)
+        return callback(null, {
+          status: "error",
+          message: "Please provide whose to pay",
+        });
+      let getClient = await getClientVerify({ ...req.body, req });
+      if (!getClient || getClient == null)
+        return callback(null, {
+          status: "error",
+          message: `Can't find ${req.body.whose}`,
+        });
+
+      const getPromise = await new Promise((resolve, reject) => {
+        (async () => {
+          if (req.body.amount <= 0)
+            reject("Amount should be greater than zero");
+       
+          const getPayment = await payment({
+            orgId: req.session.orgId,
+            id: await generatePaymentId({
+              orgId: req.session.orgId,
+              type: "out",
+            }),
+            clientId: getClient._id,
+            name: getClient.name,
+            amount: req.body.amount,
+            mode: req.body.transactionDetails.mode,
+            date: req.body.date,
+            type: "out",
+            whose: req.body.whose,
+            description: req.body.transactionDetails.notes == undefined ? "" :req.body.transactionDetails.notes,
+          })  
+          await payAmountOut({
+            getClient,
+            getPayment,
             resolve,
             reject,
             ...req.body,

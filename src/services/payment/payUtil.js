@@ -212,6 +212,38 @@ exports.payAmountIn = async ({
     return reject({ status: "error", message: error.message });
   }
 };
+exports.payAmountOut = async ({
+  getPayment,
+  getClient,
+  resolve,
+  reject,
+}) => {
+  try {
+    let balanceValue = getClient.balance.currentBalance;
+    balanceValue = balanceValue + getPayment.amount;
+ 
+    getClient.balance.currentBalance = balanceValue;
+    getClient.ledger.push({
+      id: getPayment.id,
+      amount: getPayment.amount,
+      date: getPayment.date,
+      mode: getPayment.mode,
+      subTitle: "payment out",
+      documents: [],
+      amountRemaining:getPayment.amount,
+      closingBalance: balanceValue,
+    });
+    console.log(getClient.ledger[getClient.ledger.length -1]);
+    console.log(getClient.balance.currentBalance);
+    
+    await getClient.save();
+    await getPayment.save();
+
+    return resolve({ status: "success", message: "add balance successfully" });
+  } catch (error) {
+    return reject({ status: "error", message: error.message });
+  }
+};
 
 const getAmountStatus = ({ totalPrice, paidAmount }) => {
   if (totalPrice == paidAmount) {
@@ -228,7 +260,6 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   paymentId,
   getPayment,
   totalPrice,
-  req,
   docId,
   resolve,
   reject,
@@ -306,13 +337,7 @@ function getReduceDocAmount(docBalance, closingBalance) {
   return closingBalance - docBalance;
 }
 
-function checkBalance(balance, amount) {
-  if (balance > 0) {
-    return balance - amount;
-  }
-  return balance - amount;
-  // return   amount - balance
-}
+
 
 exports.addBalanceWithInandOut = ({ type, amount, getClient }) => {
   if (type == "in") getClient.balance.gave = getClient.balance.gave + amount;

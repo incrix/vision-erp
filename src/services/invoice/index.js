@@ -34,7 +34,6 @@ module.exports = class Invoice {
             callBack,
             services,
           });
-        
           if (getValue.status == "error") {
             isCallBack = false;
           return  callBack(null, getValue);
@@ -214,6 +213,7 @@ module.exports = class Invoice {
                       ].documents.push({
                         id: getPayResult.paymentId,
                         amount: getPayResult.amount,
+                        payAmount:getPayResult.amount
                       });
                       getCustomer = await createClientBalanceForPayment({
                         paidAmount: body.paidAmount,
@@ -361,7 +361,7 @@ module.exports = class Invoice {
       // clear payAmount in session
       req.session.payAmount = 0;
       getInvoice.paymentTransactions = [];
-      
+
       // change status to "cancelled"
       getInvoice.status = "cancelled";
 
@@ -576,6 +576,7 @@ module.exports = class Invoice {
       let getPaymentList = await Payment.find({
         orgId: req.session.orgId,
         id: { $in: idList },
+        type:"in"
       });
       if (
         getPaymentList.length <= 0 ||
@@ -662,13 +663,6 @@ module.exports = class Invoice {
       // add the payment amount in the invoice paid amount
 
       getInvoice.paidAmount = getInvoice.paidAmount + amount;
-
-      // to add amount in client closing balance
-      // getClient.balance.currentBalance = await addincreaseOrdecreaseBalance({
-      //   balance: getClient.balance.currentBalance,
-      //   paidAmount: amount,
-      // });
-
 
       // save the changes in client and invoice
 

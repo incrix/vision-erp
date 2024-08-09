@@ -45,6 +45,15 @@ module.exports = ({ passport, services, log }) => {
           },
       })
   });
+  router.post("/pay-out", async (req, res) => {
+    await services.payment
+      .createPayOut({
+        req,callback: (err, payment) => {
+            if (err) return res.json(err);
+            return res.json(payment);
+          },
+      })
+  });
 
   return router;
 };

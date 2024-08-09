@@ -122,6 +122,10 @@ const schema = mongoose.Schema(
             amount: {
               type: Number,           
             },
+            payAmount: {
+              type: String,
+            },
+            
           },
         ],
         status: {

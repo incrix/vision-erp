@@ -139,6 +139,7 @@ exports.createClientBalanceForPayment = async ({
       {
         id: invoice.id,
         amount: invoice.totalPrice,
+        payAmount:paidAmount
       },
     ],
     amountRemaining: 0,
