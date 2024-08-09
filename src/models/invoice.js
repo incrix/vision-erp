@@ -231,6 +231,9 @@ const schema = mongoose.Schema(
     date: {
       type: String,
     },
+    dueDate: {
+      type: String,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

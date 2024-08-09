@@ -16,7 +16,14 @@ exports.checkTheInput = (req, res, next) => {
           return res
             .status(400)
             .json({ status: "error", message: "Invalid date format" });
+      // dueDate
+      if (key == "dueDate")
+        if (isValidDateFormat(body[key], "DD-MM-YYYY") == false)
+          return res
+            .status(400)
+            .json({ status: "error", message: "Invalid date format" });
       // id
+
       if (key == "id")
         if (typeof body[key] !== "string") {
           return res.status(400).json({
@@ -24,56 +31,54 @@ exports.checkTheInput = (req, res, next) => {
             message: `Please enter valid ${key}`,
           });
         }
-      if (key == "totalPrice")
-      {  if (typeof body[key] !== "number") {
+      if (key == "totalPrice") {
+        if (typeof body[key] !== "number") {
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
           });
         }
-        if( body[key] < 0) return res.status(400).json({
-          status: "error",
-          message: `Should be greater than zero , ${key}`,
-        }
-      )
+        if (body[key] < 0)
+          return res.status(400).json({
+            status: "error",
+            message: `Should be greater than zero , ${key}`,
+          });
       }
       // paidAmount
-      if (key == "paidAmount")
-      {  if (typeof body[key] !== "number") {
-       
+      if (key == "paidAmount") {
+        if (typeof body[key] !== "number") {
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
           });
         }
-        if( body[key] < 0) return res.status(400).json({
-          status: "error",
-          message: `Should be greater than zero , ${key}`,
-        })
+        if (body[key] < 0)
+          return res.status(400).json({
+            status: "error",
+            message: `Should be greater than zero , ${key}`,
+          });
       }
       // type
       if (key == "type")
         if (typeof body[key] !== "string") {
-
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
           });
         }
       // amount
-      if (key == "amount")
-      {  if (typeof body[key] !== "number") {
-          
+      if (key == "amount") {
+        if (typeof body[key] !== "number") {
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
           });
         }
-        if( body[key] < 0) return res.status(400).json({
-          status: "error",
-          message: `Should be greater than zero , ${key}`,
-        })
-      
+        if (body[key] < 0)
+          return res.status(400).json({
+            status: "error",
+            message: `Should be greater than zero , ${key}`,
+          });
       }
       // email
       if (key == "email")
@@ -124,7 +129,10 @@ exports.checkTheInput = (req, res, next) => {
               status: "error",
               message: `Please enter valid payment mode`,
             });
-          if (body[key].type == "" || !process.env.PAYMENT_TYPE.includes(body[key].type))
+          if (
+            body[key].type == "" ||
+            !process.env.PAYMENT_TYPE.includes(body[key].type)
+          )
             return res.status(400).json({
               status: "error",
               message: `Please enter valid payment mode`,
@@ -138,31 +146,31 @@ exports.checkTheInput = (req, res, next) => {
               message: `Please enter valid totalPrice`,
             });
       }
-      if(key == "items"){
-        if(!Array.isArray(body[key]) || body[key].length == 0){         
+      if (key == "items") {
+        if (!Array.isArray(body[key]) || body[key].length == 0) {
           return res.status(400).json({
             status: "error",
             message: "Please add a product ",
           });
         }
-      } 
-      
-      if(key == "cusId"){
-        if(!Array.isArray(body[key]) || body[key].length == 0){         
+      }
+
+      if (key == "cusId") {
+        if (!Array.isArray(body[key]) || body[key].length == 0) {
           return res.status(400).json({
             status: "error",
             message: "Please add a Customer ",
           });
         }
-      } 
-      if(key == "venId"){
-        if(!Array.isArray(body[key]) || body[key].length == 0){         
+      }
+      if (key == "venId") {
+        if (!Array.isArray(body[key]) || body[key].length == 0) {
           return res.status(400).json({
             status: "error",
             message: "Please add a Vendor ",
           });
         }
-      } 
+      }
       // additionalCharges
       if (key == "additionalCharges") {
         if (body[key].package) {
@@ -204,7 +212,7 @@ exports.checkTheInput = (req, res, next) => {
             message: "Company GSTIN should be a text",
           });
       }
-      
+
       // balance
       if (key == "balance") {
         if (
@@ -261,7 +269,7 @@ exports.checkTheInput = (req, res, next) => {
             message: `city should be a text`,
           });
       }
-    
+
       // shipping Address
       if (key == "shippingAddress") {
         for (var i = 0; i < body[key].length; i++) {

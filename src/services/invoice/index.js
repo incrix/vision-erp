@@ -170,6 +170,7 @@ module.exports = class Invoice {
               disValue: body.discount.value,
             }),
             date: req.body.date,
+            dueDate:req.body.dueDate
           })
           .then(async (getInvoiceResult) => {
             const getWaiting = new Promise((resolve, reject) => {
