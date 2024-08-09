@@ -361,6 +361,7 @@ module.exports = class Invoice {
       // clear payAmount in session
       req.session.payAmount = 0;
       getInvoice.paymentTransactions = [];
+      
       // change status to "cancelled"
       getInvoice.status = "cancelled";
 
@@ -659,13 +660,15 @@ module.exports = class Invoice {
       }
 
       // add the payment amount in the invoice paid amount
+
       getInvoice.paidAmount = getInvoice.paidAmount + amount;
 
       // to add amount in client closing balance
-      getClient.balance.currentBalance = await addincreaseOrdecreaseBalance({
-        balance: getClient.balance.currentBalance,
-        paidAmount: amount,
-      });
+      // getClient.balance.currentBalance = await addincreaseOrdecreaseBalance({
+      //   balance: getClient.balance.currentBalance,
+      //   paidAmount: amount,
+      // });
+
 
       // save the changes in client and invoice
 
@@ -674,8 +677,7 @@ module.exports = class Invoice {
       
       // console.log(getInvoice);
       // console.log(getPaymentList.documents);
-      console.log(getClient.ledger[getClient.ledger.length - 3]);
-      console.log(getClient.ledger);
+ 
       return callBack({
         status: "success",
         message: "Make a payment successfully",

@@ -185,13 +185,7 @@ module.exports = class Payment {
             type: req.body.transactionDetails.type,
             whose: req.body.whose,
             description: req.body.transactionDetails.notes == undefined ? "" :req.body.transactionDetails.notes,
-          })
-          // .then(getPayment => {
-       
-          //   return getPayment.data;
-          // })
-          // .catch(error => reject({status:"error",message:error.message}));
-    
+          })  
           await payAmountIn({
             getClient,
             getPayment,
@@ -352,11 +346,10 @@ module.exports = class Payment {
             });
           })();
         });
-
-      
+           
         // console.log(getClient.balance);
         // console.log(getClient.ledger);
-        
+        // console.log(getClient.ledger[getClient.ledger.length -1]);
         if (getWait.status === "success") {
           await getClient.save();
           await getPayment.save();

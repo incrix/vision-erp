@@ -71,14 +71,21 @@ exports.payInForInvoice = async ({
           return reject({
             status: "error",
             message:
-              "The pay amount is higher than the invoice remaining amount",
+              "The pay amount is higher than the invoice remaining amount.",
           });
-        requiredAmount += balanceAmount;
+        requiredAmount += docList[index].remainingAmount;
       }
     });
+    if (requiredAmount > amount)
+      return reject({
+        status: "error",
+        message:
+          "The pay amount should be higher than the total invoice amount.",
+      });
     // console.log(requiredAmount , amount);
-    //     if (requiredAmount >= amount)
-    //       return reject({ status: "error", message: "Invalid amount" });
+
+    // if (requiredAmount !== amount)
+    //   return reject({status: "error", message: "The pay total amount should be equal to the remaining invoice total amount."});
     return getInvoiceList;
   } catch (error) {
     return reject({ status: "error", message: error.message });
@@ -117,7 +124,7 @@ exports.payInForPurchase = async ({ reject, getClient, docList, amount }) => {
       }
     });
     console.log(requiredAmount, amount);
-    if (requiredAmount >= amount)
+    if (requiredAmount == amount)
       return reject({ status: "error", message: "Invalid amount" });
 
     return getPurchaseList;
@@ -145,7 +152,7 @@ exports.payAmountIn = async ({
         if (doc.totalPrice < doc.paidAmount + docList[index].remainingAmount)
           return reject({
             status: "error",
-            message: "something went wrong payment",
+            message: "Payment amount is higher than total amount ",
           });
         doc.status = await getAmountStatus({
           totalPrice: doc.totalPrice,
@@ -194,7 +201,9 @@ exports.payAmountIn = async ({
         getDocList.length > 0 ? getPayment.amount - getTotalAmount : 0,
       closingBalance: balanceValue,
     });
-
+    // console.log(getPayment);
+    // console.log(getDocList[0].paymentTransactions);
+    // console.log(getClient.balance.currentBalance);
     await getClient.save();
     await getPayment.save();
 
@@ -218,6 +227,7 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   getClient,
   paymentId,
   getPayment,
+  totalPrice,
   req,
   docId,
   resolve,
@@ -228,53 +238,52 @@ exports.decreaseTheClientBalanceInOrOut = async ({
   try {
     let closingBalance = getClient.balance.currentBalance;
 
-    await getClient.ledger.map((ledger) => {
+    await getClient.ledger.map(async (ledger) => {
       if (ledger.id == docId && ledger.isCancelled == false) {
         ledger.isCancelled = true;
 
         ledger.documents = [];
       } else if (ledger.id == paymentId && ledger.isCancelled == false) {
+        const documents = await [
+          ...ledger.documents.filter((getAmount) => getAmount.id !== docId),
+        ];
+
         ledger.amountRemaining = ledger.amount;
-        ledger.documents = [];
+        ledger.documents = documents;
       }
     });
 
     if (isPaidAmountZero == undefined) {
-      let payableAmount =
-        req.session.payAmount == undefined ? 0 : req.session.payAmount;
-      let docAmount = 0;
+      // let payableAmount =
+      //   req.session.payAmount == undefined ? 0 : req.session.payAmount;
+      // let docAmount = 0;
       getPayment.documents = await [
         ...getPayment.documents.filter((payId) => {
-          if (payId.type == "erp") {
-            if (payId.id == docId) {
-              docAmount = payId.docAmount;
-              payableAmount =
-                amount - (amount - (payId.payAmount + payableAmount));
-            }
-          }
+          // if (payId.type == "erp") {
+            // if (payId.id == docId) {
+              // docAmount = payId.docAmount;
+              // payableAmount =
+              //   amount - (amount - (payId.payAmount + payableAmount));
+            // }
+          // }
           if (payId.type == "erp") payId.id !== docId;
         }),
       ];
 
-      req.session.payAmount = req.session.payAmount + payableAmount;
-
+      // req.session.payAmount = req.session.payAmount + payableAmount;
+     
       getClient.ledger[getClient.ledger.length - 1].closingBalance =
-        await checkBalance(
-          getReduceDocAmount(docAmount - payableAmount, closingBalance),
-          payableAmount
-        );
+        await getReduceDocAmount(totalPrice, closingBalance);
       if (lastIndex) {
-       
-        getClient.balance.currentBalance = await checkBalance(
-          getReduceDocAmount(docAmount - payableAmount, closingBalance),
-          payableAmount
+        console.log(await getReduceDocAmount(totalPrice, closingBalance));
+        getClient.balance.currentBalance = await getReduceDocAmount(
+          totalPrice,
+          closingBalance
         );
       }
     } else if (isPaidAmountZero !== undefined) {
-      const balanceValue = await checkBalance(
-        getClient.ledger[getClient.ledger.length - 1].closingBalance,
-        amount
-      );
+      const balanceValue = await getReduceDocAmount(amount, closingBalance);
+
       getClient.ledger[getClient.ledger.length - 1].closingBalance =
         balanceValue;
       getClient.balance.currentBalance = balanceValue;
@@ -293,7 +302,7 @@ exports.decreaseTheClientBalanceInOrOut = async ({
 };
 
 function getReduceDocAmount(docBalance, closingBalance) {
-  if (docBalance > closingBalance) return docBalance - closingBalance;
+  if (docBalance > closingBalance) return -(docBalance - closingBalance);
   return closingBalance - docBalance;
 }
 
