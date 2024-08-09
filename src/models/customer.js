@@ -4,6 +4,7 @@ const schema = mongoose.Schema(
   {
     name: {
       type: String,
+      required: true,
     },
     orgId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -15,6 +16,7 @@ const schema = mongoose.Schema(
     },
     phone: {
       type: String,
+      required: true,
     },
     type: {
       type: String,

@@ -195,10 +195,10 @@ exports.payAmountIn = async ({
       closingBalance: balanceValue,
     });
 
-   
     await getClient.save();
     await getPayment.save();
-    resolve({ status: "success", message: "add balance successfully" });
+
+    return resolve({ status: "success", message: "add balance successfully" });
   } catch (error) {
     return reject({ status: "error", message: error.message });
   }
@@ -242,11 +242,12 @@ exports.decreaseTheClientBalanceInOrOut = async ({
     if (isPaidAmountZero == undefined) {
       let payableAmount =
         req.session.payAmount == undefined ? 0 : req.session.payAmount;
-
+      let docAmount = 0;
       getPayment.documents = await [
         ...getPayment.documents.filter((payId) => {
           if (payId.type == "erp") {
             if (payId.id == docId) {
+              docAmount = payId.docAmount;
               payableAmount =
                 amount - (amount - (payId.payAmount + payableAmount));
             }
@@ -254,26 +255,30 @@ exports.decreaseTheClientBalanceInOrOut = async ({
           if (payId.type == "erp") payId.id !== docId;
         }),
       ];
+
       req.session.payAmount = req.session.payAmount + payableAmount;
+
       getClient.ledger[getClient.ledger.length - 1].closingBalance =
-        await checkBalance(closingBalance, payableAmount);
+        await checkBalance(
+          getReduceDocAmount(docAmount - payableAmount, closingBalance),
+          payableAmount
+        );
       if (lastIndex) {
+       
         getClient.balance.currentBalance = await checkBalance(
-          closingBalance,
+          getReduceDocAmount(docAmount - payableAmount, closingBalance),
           payableAmount
         );
       }
     } else if (isPaidAmountZero !== undefined) {
-      const balanceValue = (getClient.balance.currentBalance =
-        await checkBalance(
-          getClient.ledger[getClient.ledger.length - 1].closingBalance,
-          amount
-        ));
+      const balanceValue = await checkBalance(
+        getClient.ledger[getClient.ledger.length - 1].closingBalance,
+        amount
+      );
       getClient.ledger[getClient.ledger.length - 1].closingBalance =
         balanceValue;
       getClient.balance.currentBalance = balanceValue;
     }
-
     return (
       (await getClient) &&
       resolve({
@@ -286,6 +291,11 @@ exports.decreaseTheClientBalanceInOrOut = async ({
     return reject({ status: "error", message: error.message });
   }
 };
+
+function getReduceDocAmount(docBalance, closingBalance) {
+  if (docBalance > closingBalance) return docBalance - closingBalance;
+  return closingBalance - docBalance;
+}
 
 function checkBalance(balance, amount) {
   if (balance > 0) {

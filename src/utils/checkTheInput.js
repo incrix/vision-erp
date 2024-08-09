@@ -25,23 +25,36 @@ exports.checkTheInput = (req, res, next) => {
           });
         }
       if (key == "totalPrice")
-        if (typeof body[key] !== "number") {
+      {  if (typeof body[key] !== "number") {
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
           });
         }
+        if( body[key] < 0) return res.status(400).json({
+          status: "error",
+          message: `Should be greater than zero , ${key}`,
+        }
+      )
+      }
       // paidAmount
       if (key == "paidAmount")
-        if (typeof body[key] !== "number") {
+      {  if (typeof body[key] !== "number") {
+       
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
           });
         }
+        if( body[key] < 0) return res.status(400).json({
+          status: "error",
+          message: `Should be greater than zero , ${key}`,
+        })
+      }
       // type
       if (key == "type")
         if (typeof body[key] !== "string") {
+
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
@@ -49,12 +62,19 @@ exports.checkTheInput = (req, res, next) => {
         }
       // amount
       if (key == "amount")
-        if (typeof body[key] !== "number") {
+      {  if (typeof body[key] !== "number") {
+          
           return res.status(400).json({
             status: "error",
             message: `Please enter valid ${key}`,
           });
         }
+        if( body[key] < 0) return res.status(400).json({
+          status: "error",
+          message: `Should be greater than zero , ${key}`,
+        })
+      
+      }
       // email
       if (key == "email")
         if (!validator.validate(body[key]))

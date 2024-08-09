@@ -69,7 +69,7 @@ module.exports = ({ passport, services, log }) => {
           return res.json({ status: "error", message: "Error creating user" });
         });
     } else {
-      return res.json({ message: "Invalid email" });
+      return res.json({ status:"error",message: "Invalid email" });
     }
   });
 

@@ -312,11 +312,13 @@ module.exports = class Payment {
           status: "error",
           message: "Payment not found",
         });
+       
       let getClient = await getClientVerify({
         whose: getPayment.whose,
         id: getPayment.clientId,
         req,
       });
+  
       if (!getClient || getClient == null)
         return callback(null, {
           status: "error",
@@ -344,16 +346,17 @@ module.exports = class Payment {
               req,
               lastIndex,
               paymentId: getPayment.id,
-              docId: req.body.docId, // its created from manually so dont confuse
+              docId: req.body.docId, // its created from manually so don't confuse
               totalPrice,
               getPayableAmount,
             });
           })();
         });
 
-        // console.log(getPayment);
+      
         // console.log(getClient.balance);
         // console.log(getClient.ledger);
+        
         if (getWait.status === "success") {
           await getClient.save();
           await getPayment.save();

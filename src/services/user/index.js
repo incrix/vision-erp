@@ -60,7 +60,7 @@ module.exports = class User {
     return await this.mailSender
       .sendMail({
         to: req.session.email,
-        subject: "This is OTP",
+        subject: `OTP - ${otp}`,
         html: htmlTemp,
       })
       .then((mailSender) => {
