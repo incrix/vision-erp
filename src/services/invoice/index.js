@@ -497,6 +497,7 @@ module.exports = class Invoice {
               invoice.documents.push({
                 id: getPayResult.paymentId,
                 amount,
+                payAmount:getPayResult.amount
               });
             }
           });
