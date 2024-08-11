@@ -38,11 +38,11 @@ exports.sessionExpire = (req, res, next) => {
     req.session.expire = now.unix();
     return next();
   } else if (
-    req.path !== "/user/login" ||
-    req.path !== "/user/otp-verify" ||
-    req.path !== "/user/send-otp" ||
-    req.path !== "/user/createUser" ||
-    req.path !== "/user/resend-otp" ||
+    req.path !== "/user/login" &&
+    req.path !== "/user/otp-verify"&&
+    req.path !== "/user/send-otp" &&
+    req.path !== "/user/create-user" &&
+    req.path !== "/user/resend-otp" &&
     req.path !== "/user/create-business"
   ) {
     return res
