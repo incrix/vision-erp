@@ -13,7 +13,25 @@ const {
 } = require("./productUtil");
 const Vendor = require("../../models/vendor");
 const Customer = require("../../models/customer");
-module.exports = class Product {
+const productDecodeEncoder = require("./parents/productDecodeEncode");
+const productTimeLine = require("./parents/productTimeLine");
+function Classes(bases) {
+  class Bases {
+    constructor() {
+      bases.forEach((base) => Object.assign(this, new base()));
+    }
+  }
+  bases.forEach((base) => {
+    Object.getOwnPropertyNames(base.prototype)
+      .filter((prop) => prop != "constructor")
+      .forEach((prop) => (Bases.prototype[prop] = base.prototype[prop]));
+  });
+  return Bases;
+}
+
+module.exports = class Product extends (
+  Classes([productDecodeEncoder, productTimeLine])
+) {
   async createCategory({ req, catName, imageUrl }) {
     try {
       if (catName == "" || catName == undefined)
@@ -191,7 +209,6 @@ module.exports = class Product {
                 });
               })();
             });
-
             if (getWait.status == "error") return callBack(null, getWait);
           }
         else
@@ -208,7 +225,6 @@ module.exports = class Product {
         false
       );
     } catch (error) {
-  
       return callBack(null, { status: "error", message: error.message });
     }
   }
@@ -296,17 +312,26 @@ module.exports = class Product {
             .json({ status: "error", message: "Something went wrong in type" });
         }
       }
-
-      await this.productDecreaseOrIncrease({
-        req,
-        list: req.body.items,
-        clientCount:
-          type == "invoice" ? req.body.cusId.length : req.body.venId.length,
-        callBack: (err, data) => {
-          if (err) return res.status(401).json(err);
-          return res.json(data);
-        },
+      const getPromise = await new Promise((resolve, reject) => {
+        (async () => {
+          await this.checkProductLine({ ...req,...req.body, resolve, reject });
+        })();
       });
+      if (getPromise.status == "error") return res.status(404).json(getPromise);
+      const {status,message,data} = getPromise
+      return res.status(200).json({status,message,data});
+
+      // await this.productDecreaseOrIncrease({
+      //   req,
+      //   list: req.body.items,
+      //   clientCount:
+      //     type == "invoice" ? req.body.cusId.length : req.body.venId.length,
+      //   callBack: (err, data) => {
+      //     if (err) return res.status(401).json(err);
+      //     return res.json(data);
+      //   },
+      // });
+      
     } catch (error) {
       console.log(error);
       return res.status(203).json({ status: "error", message: error.message });

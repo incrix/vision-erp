@@ -4,6 +4,7 @@ const Org = require("../../models/Org.js");
 const validator = require("email-validator");
 const Category = require("../../models/category.js");
 const Notification = require("../../models/notification.js");
+const ProductTimeline = require("../../models/productTimeLine.js")
 module.exports = class User {
   constructor({ otp, mailSender }) {
     this.otp = otp;
@@ -13,17 +14,17 @@ module.exports = class User {
     try {
       const { email } = req.body;
       if (validator.validate(email)) {
-  
         const getUser = await user.findOne({ email });
         if (!getUser) {
           return { status: "error", message: "User does not exist" };
         }
         const otp = this.otp.generateOtp();
         req.session.otp = otp;
-        req.session.type = "userLogin"
-        req.session.email = email
-        req.session.userId = getUser._id
-        
+        req.session.type = "userLogin";
+        req.session.email = email;
+        req.session.userId = getUser._id;
+        req.session.name = getUser.name;
+
         return await this.sendOtp(email, otp)
           .then(async (response) => {
             getUser.OTP.code = otp;
@@ -88,21 +89,24 @@ module.exports = class User {
     });
   }
   async checkOTP({ otp, req }) {
-   
     if (!req.session.numOfattempts) req.session.numOfattempts = 1;
-    if (req.session.otp === otp && req.session.numOfattempts < process.env.OTP_ATTEMPT_LIMIT) {
-      
-       const getUser = await user.findOne({_id:req.session.userId})
-       req.session.isLogin = true
-       req.session.fill_the_details = getUser.orgList.length > 0
-       req.session.orgId = getUser.orgList[0].orgID
-      return { status: "success", fill_the_details:getUser.orgList.length > 0,message: "OTP verified successfully" };
+    if (
+      req.session.otp === otp &&
+      req.session.numOfattempts < process.env.OTP_ATTEMPT_LIMIT
+    ) {
+      const getUser = await user.findOne({ _id: req.session.userId });
+      req.session.isLogin = true;
+      req.session.fill_the_details = getUser.orgList.length > 0;
+      req.session.orgId = getUser.orgList[0].orgID;
+      return {
+        status: "success",
+        fill_the_details: getUser.orgList.length > 0,
+        message: "OTP verified successfully",
+      };
     } else if (req.session.numOfattempts > process.env.OTP_ATTEMPT_LIMIT) {
-   
       return { status: "info", message: "your OTP is Expired" };
     } else {
       {
-      
         req.session.numOfattempts++;
         return { status: "info", message: "OTP not verified" };
       }
@@ -111,25 +115,30 @@ module.exports = class User {
 
   async checkOTPForCreateUser({ otp, req }) {
     if (!req.session.numOfattempts) req.session.numOfattempts = 1;
-    if (req.session.otp === otp && req.session.numOfattempts < process.env.OTP_ATTEMPT_LIMIT) {
+    if (
+      req.session.otp === otp &&
+      req.session.numOfattempts < process.env.OTP_ATTEMPT_LIMIT
+    ) {
+      if (req.session.email && req.session.name && req.session.otp) {
+        const newUser = await user({
+          email: req.session.email,
+          OTP: { code: req.session.otp },
+          name: req.session.name,
+        });
+        if (newUser) {
+          await newUser.save();
+          req.session.isLogin = true;
+          req.session.fill_the_details = false;
+          req.session.userId = newUser._id;
+          return {
+            status: "success",
+            type: "create",
+            message: "User create successfully",
+          };
+        } else return { status: "error", message: "User creation failed" };
+      } else return { status: "error", message: "something went wrong" };
 
-        if (req.session.email && req.session.name && req.session.otp) {
-          const newUser = await user({
-            email: req.session.email,
-            OTP: { code: req.session.otp },
-            name: req.session.name,
-          });
-          if (newUser) {
-            await newUser.save();
-            req.session.isLogin = true;
-            req.session.fill_the_details = false;
-            req.session.userId = newUser._id
-            return { status: "success", type:"create", message: "User create successfully" };
-          } else return { status: "error", message: "User creation failed" };
-        } else return { status: "error", message: "something went wrong" };
-
-        // status: "success", message: "OTP verified successfully"
-       
+      // status: "success", message: "OTP verified successfully"
     } else if (req.session.numOfattempts > process.env.OTP_ATTEMPT_LIMIT) {
       return { status: "info", message: "your OTP is Expired" };
     } else {
@@ -140,14 +149,13 @@ module.exports = class User {
     }
   }
 
-
   async createUserEmail({ email, name, req }) {
     const getUser = await user.findOne({ email });
     if (getUser) return { status: "info", message: "user already exists" };
     const otp = await this.otp.generateOtp();
-   
+
     req.session.otp = otp;
-    req.session.type = "userCreate"
+    req.session.type = "userCreate";
     req.session.name = name;
     req.session.email = email;
     await this.sendOtp(email, otp);
@@ -156,9 +164,8 @@ module.exports = class User {
     }
   }
 
-
-  async getBusinessSave({ 
-    req , 
+  async getBusinessSave({
+    req,
     orgName,
     industryName,
     orgEmail,
@@ -171,25 +178,25 @@ module.exports = class User {
     pincode,
     avatar,
     gender,
-    orgLogo, }) {
-      
+    orgLogo,
+  }) {
     const business = await user.findOne({ _id: req.session.userId });
     if (business) {
       const organization = await Org.findOne({
         userId: business._id,
         name: orgName,
       });
-     
+
       if (organization)
         return {
           status: "error",
           message: "the organization name already exists",
         };
-       
+
       return await Org.create({
         userId: business._id,
         name: orgName,
-        industry:industryName,
+        industry: industryName,
         phone: orgPhone,
         email: orgEmail,
         GSTIN: orgGST,
@@ -204,21 +211,31 @@ module.exports = class User {
         logoUrl: orgLogo,
       })
         .then(async (orgResult) => {
-         // await orgResult.save();
+          // await orgResult.save();
           return await user
-            .findOne({ _id: req.session.userId})
+            .findOne({ _id: req.session.userId })
             .then(async (userResult) => {
               userResult.avatar = avatar;
               userResult.gender = gender;
               userResult.orgList.push({ orgID: orgResult._id });
               await userResult.save();
-              const getCatogory = await Category({ userId: userResult._id,orgId:orgResult._id})
+              const getCatogory = await Category({
+                userId: userResult._id,
+                orgId: orgResult._id,
+              });
               await getCatogory.save();
-              const notification = await Notification({ userId: userResult._id,orgID: orgResult._id});
+              const notification = await Notification({
+                userId: userResult._id,
+                orgID: orgResult._id,
+              });
               await notification.save();
-              req.session.isLogin = true
-              req.session.orgId = orgResult._id
-              req.session.fill_the_details = true
+             const createTimeLine = await ProductTimeline({
+                orgID: orgResult._id,
+              })
+             await createTimeLine.save()
+              req.session.isLogin = true;
+              req.session.orgId = orgResult._id;
+              req.session.fill_the_details = true;
               return {
                 status: "success",
                 message: "Successfully saved your information",

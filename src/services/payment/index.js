@@ -8,8 +8,7 @@ const {
   payAmountIn,
   payInForPurchase,
   payInForInvoice,
-  payAmountOut
-
+  payAmountOut,
 } = require("./payUtil");
 const { getDateCreated } = require("../../utils/createDate");
 const { generatePaymentId } = require("../../utils/generateID");
@@ -55,7 +54,7 @@ module.exports = class Payment {
           id: response._id,
           paymentId: response.id,
           amount: response.amount,
-          data:response
+          data: response,
         };
       })
       .catch((error) => {
@@ -67,7 +66,7 @@ module.exports = class Payment {
       });
   }
 
-  async creatPaymentCheck({ req, callback }) {
+  async createPaymentCheck({ req, callback }) {
     try {
       let getClient = await getClientVerify({ ...req.body, req });
 
@@ -142,7 +141,7 @@ module.exports = class Payment {
     }
   }
   // Payment in
-  async createPayIn({ req ,callback }) {
+  async createPayIn({ req, callback }) {
     try {
       // Debit or in == customer pay you && red && -
       if (req.body.whose == undefined)
@@ -161,17 +160,20 @@ module.exports = class Payment {
         (async () => {
           if (req.body.amount <= 0)
             reject("Amount should be greater than zero");
-         let getDocList 
-          if(req.body.docList.length > 0)
-            getDocList = req.body.whose == "customer" ?  await payInForInvoice({
-            reject,
-            ...req.body,
-            getClient,
-          }) : payInForPurchase({
-            reject,
-            ...req.body,
-            getClient,
-          });
+          let getDocList;
+          if (req.body.docList.length > 0)
+            getDocList =
+              req.body.whose == "customer"
+                ? await payInForInvoice({
+                    reject,
+                    ...req.body,
+                    getClient,
+                  })
+                : payInForPurchase({
+                    reject,
+                    ...req.body,
+                    getClient,
+                  });
           const getPayment = await payment({
             orgId: req.session.orgId,
             id: await generatePaymentId({
@@ -185,8 +187,11 @@ module.exports = class Payment {
             date: req.body.date,
             type: req.body.transactionDetails.type,
             whose: req.body.whose,
-            description: req.body.transactionDetails.notes == undefined ? "" :req.body.transactionDetails.notes,
-          })  
+            description:
+              req.body.transactionDetails.notes == undefined
+                ? ""
+                : req.body.transactionDetails.notes,
+          });
           await payAmountIn({
             getClient,
             getPayment,
@@ -195,18 +200,21 @@ module.exports = class Payment {
             reject,
             ...req.body,
           });
-         return resolve({status:"success",message:"Invoice successfully received"})
+          return resolve({
+            status: "success",
+            message: "Invoice successfully received",
+          });
         })();
       });
       if (getPromise.status == "error") return callback(null, getPromise);
-      return callback(getPromise,false)
+      return callback(getPromise, false);
       // return callback(getPromise, false);
     } catch (error) {
       console.log(error);
       return callback(null, { status: "error", message: error.message });
     }
   }
-  async createPayOut({ req ,callback }) {
+  async createPayOut({ req, callback }) {
     try {
       // Debit or in == customer pay you && red && -
       if (req.body.whose == undefined)
@@ -225,7 +233,7 @@ module.exports = class Payment {
         (async () => {
           if (req.body.amount <= 0)
             reject("Amount should be greater than zero");
-       
+
           const getPayment = await payment({
             orgId: req.session.orgId,
             id: await generatePaymentId({
@@ -239,8 +247,11 @@ module.exports = class Payment {
             date: req.body.date,
             type: "out",
             whose: req.body.whose,
-            description: req.body.transactionDetails.notes == undefined ? "" :req.body.transactionDetails.notes,
-          })  
+            description:
+              req.body.transactionDetails.notes == undefined
+                ? ""
+                : req.body.transactionDetails.notes,
+          });
           await payAmountOut({
             getClient,
             getPayment,
@@ -248,40 +259,98 @@ module.exports = class Payment {
             reject,
             ...req.body,
           });
-         return resolve({status:"success",message:"Invoice successfully received"})
+          return resolve({
+            status: "success",
+            message: "Invoice successfully received",
+          });
         })();
       });
       if (getPromise.status == "error") return callback(null, getPromise);
-      return callback(getPromise,false)
+      return callback(getPromise, false);
       // return callback(getPromise, false);
     } catch (error) {
       console.log(error);
       return callback(null, { status: "error", message: error.message });
     }
   }
+
+  async cancelPayment({ req, callback, services }) {
+    try {
+      const getPayment = await payment.findOne({
+        orgId: req.session.orgId,
+        _id: req.body.paymentId,
+      });
+
+      if (!getPayment)
+        return callback(null, {
+          status: "error",
+          message: "Payment not found",
+        });
+      let getClient = await getClientVerify({
+        whose: getPayment.whose,
+        id: getPayment.clientId,
+        req,
+      });
+      if (!getClient || getClient == null)
+        return callback(null, {
+          status: "error",
+          message: "Can't find Vendor or Customer",
+        });
+      if (getClient.status == "error") return callback(null, getClient);
+      if (getPayment.isCancelled)
+        return callback(null, {
+          status: "error",
+          message: "Payment already cancelled",
+        });
+      if (getPayment.type == "in") {
+       const getPromise = await new Promise((resolve, reject) =>{
+          (async()=>{
+            await services.invoice.cancelPaymentInvoice({
+              req,
+              getPayment,
+              services,
+              getClient,
+              resolve, 
+              reject
+            });
+          })()
+        })
+        if(getPromise.status == "error") return callback(null, getPromise);
+      } else if (getPayment.type == "out") {
+
+      }
+
+      return callback(
+        { status: "success", message: "Payment successfully cancelled" },
+        false
+      );
+    } catch (error) {
+      callback(null, { status: "error", message: error.message });
+    }
+  }
   // async canInvoicePaymentForManuel({ req, callback }) {
   //   try {
-  //     const getPayment = await payment.findOne({
-  //       orgId: req.session.orgId,
-  //       _id: req.body.paymentId,
-  //     });
+  // const getPayment = await payment.findOne({
+  //   orgId: req.session.orgId,
+  //   _id: req.body.paymentId,
+  // });
 
-  //     if (!getPayment)
-  //       return callback(null, {
-  //         status: "error",
-  //         message: "Payment not found",
-  //       });
+  // if (!getPayment)
+  //   return callback(null, {
+  //     status: "error",
+  //     message: "Payment not found",
+  //   });
 
-  //     let getClient = await getClientVerify({
-  //       whose: getPayment.whose,
-  //       id: getPayment.clientId,
-  //       req,
-  //     });
-  //     if (!getClient || getClient == null)
-  //       return callback(null, {
-  //         status: "error",
-  //         message: "Can't find Vendor or Customer",
-  //       });
+  // let getClient = await getClientVerify({
+  //   whose: getPayment.whose,
+  //   id: getPayment.clientId,
+  //   req,
+  // });
+  // if (!getClient || getClient == null)
+  //   return callback(null, {
+  //     status: "error",
+  //     message: "Can't find Vendor or Customer",
+  //   });
 
   //     if (getClient.status == "error") return callback(null, getClient);
 
@@ -325,7 +394,6 @@ module.exports = class Payment {
   //         status: "error",
   //         message: "The payment already cancelled",
   //       });
-
   //     return callback(
   //       {
   //         status: "success",
@@ -360,13 +428,13 @@ module.exports = class Payment {
           status: "error",
           message: "Payment not found",
         });
-       
+
       let getClient = await getClientVerify({
         whose: getPayment.whose,
         id: getPayment.clientId,
         req,
       });
-  
+
       if (!getClient || getClient == null)
         return callback(null, {
           status: "error",
@@ -400,7 +468,7 @@ module.exports = class Payment {
             });
           })();
         });
-           
+
         // console.log(getClient.balance);
         // console.log(getClient.ledger);
         // console.log(getClient.ledger[getClient.ledger.length -1]);

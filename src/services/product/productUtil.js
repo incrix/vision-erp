@@ -97,3 +97,5 @@ const countProductForPurchase = (stockQty, quantity) => {
   }
   return stockQty + quantity;
 };
+
+

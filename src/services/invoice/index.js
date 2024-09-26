@@ -7,43 +7,85 @@ const {
   getAmountStatus,
   createClientBalanceForInvoice,
   createClientBalanceForPayment,
-  addincreaseOrdecreaseBalance,
   checkVerifyRemainingAmount,
-  customAmountCondition
+  customAmountCondition,
 } = require("./invoiceUtil");
 
-const { getDateCreated } = require("../../utils/createDate");
+const paymentInvoice = require("./parents/paymentInvoice");
+const cancelInvoice = require("./parents/cancelInvoice");
 
-module.exports = class Invoice {
+function Classes(bases) {
+  class Bases {
+    constructor() {
+      bases.forEach((base) => Object.assign(this, new base()));
+    }
+  }
+  bases.forEach((base) => {
+    Object.getOwnPropertyNames(base.prototype)
+      .filter((prop) => prop != "constructor")
+      .forEach((prop) => (Bases.prototype[prop] = base.prototype[prop]));
+  });
+  return Bases;
+}
+
+module.exports = class Invoice extends (
+  Classes([paymentInvoice, cancelInvoice])
+) {
+  constructor() {
+    super();
+  }
   async createInvoice({ body, req, callBack, services }) {
     try {
       const cusID = body.cusId;
+      // get decrypt data from product
+      let getData = await services.product.decryptData(body.items);
+      if (getData.status == "error") return callBack(null, getData.status);
+      // and decrypt data save into body
+      body.items = getData.data;
       if (cusID.length < 0) {
-        return callBack(null, { status: "error", message: "Please Select Customer" });
+        return callBack(null, {
+          status: "error",
+          message: "Please Select Customer",
+        });
       }
-      // if(body.totalPrice <= 0) {
-      //   return callBack(null, { status: "error", message: "Total Price must be greater than 0" });
-      // }
+      if (body.totalPrice < 0) {
+        return callBack(null, {
+          status: "error",
+          message: "Total Price must be greater than 0",
+        });
+      }
       const sendAllCusID = async (callBack) => {
         let isCallBack = true;
+        var invoiceId = [];
         for (let i = 0; i < cusID.length; i++) {
           const getValue = await this.createInvoiceOneByOne({
             body,
             cusID: cusID[i],
             req,
+            getInvoiceId: (id) => {
+              invoiceId.push(id);
+            },
             callBack,
             services,
           });
           if (getValue.status == "error") {
             isCallBack = false;
-          return  callBack(null, getValue);
+            return callBack(null, getValue);
           }
         }
+        getData = await services.product.encryptData({
+          items: body.items,
+          invoiceId,
+          date: req.body.date,
+          type: "invoice",
+        });
+        if (getData.status == "error") return callBack(null, getData.status);
         isCallBack &&
           callBack(
             {
               status: "success",
               message: "Invoice Created Successfully",
+              data: getData.data,
             },
             false
           );
@@ -55,14 +97,13 @@ module.exports = class Invoice {
     }
   }
 
-  async getInvoice({req, callBack}) {
+  async getInvoice({ req, callBack }) {
     try {
-      
       const getInvoice = await invoice.findOne({
         orgId: req.session.orgId,
         _id: req.query.id,
       });
-   
+
       if (!getInvoice)
         return callBack(null, {
           status: "error",
@@ -74,11 +115,19 @@ module.exports = class Invoice {
       callBack(null, { status: "error", message: error.message });
     }
   }
-  async createInvoiceOneByOne({ body, cusID, req, callBack, services }) {
+  async createInvoiceOneByOne({
+    body,
+    cusID,
+    req,
+    getInvoiceId,
+    callBack,
+    services,
+  }) {
     return new Promise(async (resolve, reject) => {
       (async () => {
         const invoicecount = await invoice.find({ orgId: req.session.orgId });
         const invoiceId = await genereateInvoiceId(invoicecount);
+        getInvoiceId(invoiceId);
         let getCustomer = await Customer.findOne({ _id: cusID });
 
         if (body.totalPrice < body.paidAmount)
@@ -109,7 +158,10 @@ module.exports = class Invoice {
                   : getCustomer.companyDetails,
             },
             transactionDetails: {
-              mode: body.transactionDetails.type == "" ? undefined :body.transactionDetails.type,
+              mode:
+                body.transactionDetails.type == ""
+                  ? undefined
+                  : body.transactionDetails.type,
             },
             items: body.items,
             additionalCharges: {
@@ -169,7 +221,7 @@ module.exports = class Invoice {
               disValue: body.discount.value,
             }),
             date: req.body.date,
-            dueDate:req.body.dueDate
+            dueDate: req.body.dueDate,
           })
           .then(async (getInvoiceResult) => {
             const getWaiting = new Promise((resolve, reject) => {
@@ -183,7 +235,7 @@ module.exports = class Invoice {
               })();
             });
             if (getWaiting.status == "error") return callBack(getWaiting);
-            if (body.paidAmount > 0 )
+            if (body.paidAmount > 0)
               return await services.payment
                 .createPayment({
                   orgId: req.session.orgId,
@@ -204,16 +256,16 @@ module.exports = class Invoice {
                   ],
                 })
                 .then(async (getPayResult) => {
-                  if(getPayResult.status == "error")  return reject(getPayResult)
+                  if (getPayResult.status == "error")
+                    return reject(getPayResult);
                   new Promise((resolve, reject) => {
                     (async () => {
-
                       getCustomer.ledger[
                         getCustomer.ledger.length - 1
                       ].documents.push({
                         id: getPayResult.paymentId,
                         amount: getPayResult.amount,
-                        payAmount:getPayResult.amount
+                        payAmount: getPayResult.amount,
                       });
                       getCustomer = await createClientBalanceForPayment({
                         paidAmount: body.paidAmount,
@@ -284,99 +336,6 @@ module.exports = class Invoice {
       callBack(error);
     }
   }
-  async cancelInvoice({ req, callBack, services, id }) {
-    try {
-      const getInvoice = await invoice.findOne({
-        orgId: req.session.orgId,
-        id,
-      });
-
-      if (!getInvoice)
-       return callBack(null, {
-          status: "error",
-          message: "something went wrong with organization Id Or Invoice Id",
-        });
-      if (getInvoice.status == "cancelled")
-        return callBack(null, {
-          status: "error",
-          message: "Invoice is already cancelled",
-        });
-      // add the invoice to the body
-      req.body.docId = getInvoice.id;
-      // clear payAmount in session
-      req.session.payAmount = 0;
-      if (getInvoice.paymentTransactions.length > 0) {
-        for (let i = 0; i < getInvoice.paymentTransactions.length; i++) {
-          const getPromise = await new Promise((resolve, reject) => {
-            (async () => {
-              //  If the payment is made through cash or UPI, the function will call
-              if (getInvoice.paymentTransactions[i].type !== "balance") {
-                req.body.paymentId = getInvoice.paymentTransactions[i].id;
-                await services.payment.canInvoicePayment({
-                  req,
-                  totalPrice: getInvoice.totalPrice,
-                  paidAmount: getInvoice.paidAmount,
-                  lastIndex:
-                    getInvoice.paymentTransactions[
-                      getInvoice.paymentTransactions.length - 1
-                    ] == getInvoice.paymentTransactions[i]
-                      ? true
-                      : false, // its was help to change the closing balance in the client transaction
-
-                  callback: function (err, data) {
-             
-                    if (data.status == "error") reject(data);
-                    resolve(data);
-                  },
-                });
-              }
-            })();
-          });
-
-          if (getPromise.status == "error") return callBack(null, getPromise);
-        }
-      }
-      // This function will call if the payment doesn't pay
-      else if (getInvoice.paidAmount == 0) {
-        const getPromise = await new Promise(function (resolve, reject) {
-          (async () => {
-            await services.payment.canInvoicePaymentForBalance({
-              req,
-              amount: getInvoice.totalPrice,
-              whose: "customer",
-              id: getInvoice.customerDetails.cusID,
-              isPaidAmountZero: true,
-              callback: function (err, data) {
-                if (err) resolve(data);
-                if (data.status == "error" || data == null) resolve(data);
-                resolve(data);
-              },
-            });
-          })();
-        });
-
-        if (getPromise.status == "error" || getPromise == null)
-          return callBack(null, getPromise);
-      }
-      // clear payAmount in session
-      req.session.payAmount = 0;
-      getInvoice.paymentTransactions = [];
-
-      // change status to "cancelled"
-      getInvoice.status = "cancelled";
-
-      await getInvoice.save();
-
-     return callBack(
-        { status: "success", message: "invoice cancelled successfully" },
-        false
-      );
-    } catch (error) {
-      console.log(error);
-      callBack(null, error.message);
-    }
-  }
-
   async deleteInvoice({ req, callBack, id }) {
     try {
       const checkIsCancel = await invoice.findOne({
@@ -412,7 +371,10 @@ module.exports = class Invoice {
   async invoicePayment({ req, callBack, services, body }) {
     try {
       const { id, date, amount } = body;
-      const getInvoice = await invoice.findOne({orgId:req.session.orgId ,id });
+      const getInvoice = await invoice.findOne({
+        orgId: req.session.orgId,
+        id,
+      });
       if (!getInvoice)
         return callBack(null, {
           status: "error",
@@ -427,7 +389,7 @@ module.exports = class Invoice {
           status: "error",
           message: "couldn't find client ",
         });
-        console.log(getInvoice);
+      console.log(getInvoice);
       if (getInvoice.status == "paid")
         return callBack(null, {
           status: "error",
@@ -460,7 +422,7 @@ module.exports = class Invoice {
           date,
           type: "in",
           whose: "customer",
-          description:req.body.transactionDetails.notes,
+          description: req.body.transactionDetails.notes,
           documents: [
             {
               type: "erp",
@@ -497,7 +459,7 @@ module.exports = class Invoice {
               invoice.documents.push({
                 id: getPayResult.paymentId,
                 amount,
-                payAmount:getPayResult.amount
+                payAmount: getPayResult.amount,
               });
             }
           });
@@ -547,9 +509,10 @@ module.exports = class Invoice {
           status: "error",
           message: "You could not pay your invoice while invoice was cancel",
         });
-   
+
       if (
-        amount !== [...paymentList.map((a) => a.amount)].reduce((acc, a) => acc+a) ||
+        amount !==
+          [...paymentList.map((a) => a.amount)].reduce((acc, a) => acc + a) ||
         amount > getInvoice.totalPrice ||
         getInvoice.totalPrice < getInvoice.paidAmount ||
         getInvoice.totalPrice < getInvoice.paidAmount + amount
@@ -560,8 +523,7 @@ module.exports = class Invoice {
         });
       const getClient = await Customer.findOne({
         _id: getInvoice.customerDetails.cusID,
-      });      
-
+      });
 
       if (!getClient)
         return callBack(null, {
@@ -573,11 +535,11 @@ module.exports = class Invoice {
           status: "error",
           message: "Please select a payment list",
         });
-      const idList = [...paymentList.map((filter) => filter.id)]
+      const idList = [...paymentList.map((filter) => filter.id)];
       let getPaymentList = await Payment.find({
         orgId: req.session.orgId,
         id: { $in: idList },
-        type:"in"
+        type: "in",
       });
       if (
         getPaymentList.length <= 0 ||
@@ -588,11 +550,17 @@ module.exports = class Invoice {
           message: "Please give Valuable a payment list",
         });
 
-         getPaymentList = [...getPaymentList.filter(payment => {
-          return customAmountCondition({amount:payment.amount,id:payment.id,paymentList,idList});
-        })]
-     
-   
+      getPaymentList = [
+        ...getPaymentList.filter((payment) => {
+          return customAmountCondition({
+            amount: payment.amount,
+            id: payment.id,
+            paymentList,
+            idList,
+          });
+        }),
+      ];
+
       getInvoice.status = await getAmountStatus({
         totalPrice: getInvoice.totalPrice,
         paidAmount: getInvoice.paidAmount + amount,
@@ -649,8 +617,7 @@ module.exports = class Invoice {
             getPaymentList
               .map((fil) => fil.id)
               .indexOf(getClient.ledger[index].id)
-          ]
-          .save();
+          ].save();
         }
       }
       //add invoice payment details into the client ledger  list
@@ -669,10 +636,10 @@ module.exports = class Invoice {
 
       await getClient.save();
       await getInvoice.save();
-      
+
       // console.log(getInvoice);
       // console.log(getPaymentList.documents);
- 
+
       return callBack({
         status: "success",
         message: "Make a payment successfully",
@@ -708,7 +675,6 @@ module.exports = class Invoice {
           status: "error",
           message: "You cant pay the amount",
         });
-      console.log(getInvoice.paidAmount);
 
       return callBack({ status: "success", data: getInvoice }, false);
     } catch (error) {

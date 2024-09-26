@@ -23,6 +23,7 @@ const Invoice = require("./services/invoice/index.js");
 const Payment = require("./services/payment/index.js");
 const Purchase = require("./services/purchase/index.js");
 
+
 module.exports = (config) => {
   const getConnection = connectDB({
     url: config.databaseURL,

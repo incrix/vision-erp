@@ -90,7 +90,9 @@ exports.payInForInvoice = async ({
   } catch (error) {
     return reject({ status: "error", message: error.message });
   }
+
 };
+
 
 exports.payInForPurchase = async ({ reject, getClient, docList, amount }) => {
   try {

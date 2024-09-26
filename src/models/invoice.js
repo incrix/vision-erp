@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+const unit = require("../utils/unit");
 const schema = mongoose.Schema(
   {
     orgId: {
@@ -82,6 +82,10 @@ const schema = mongoose.Schema(
         productId: {
           type: String,
         },
+        unit:{
+          type: String,
+          enum: unit
+        },
         productIndex: {
           type: Number,
           required: true,
@@ -118,25 +122,31 @@ const schema = mongoose.Schema(
           cgst: {
             percentage: {
               type: Number,
+              default: 0,
             },
             amount: {
               type: Number,
+              default: 0,
             },
           },
           sgst: {
             percentage: {
               type: Number,
+              default: 0,
             },
             amount: {
               type: Number,
+              default: 0,
             },
           },
           igst: {
             percentage: {
               type: Number,
+              default: 0,
             },
             amount: {
               type: Number,
+              default: 0,
             },
           },
           cess: {
@@ -206,20 +216,25 @@ const schema = mongoose.Schema(
       },
       value: {
         type: Number,
+        default:0,
       },
       amount: {
         type: Number,
+        default:0,
       },
     },
     tax: {
       igst: {
         type: Number,
+        default:0,
       },
       cgst: {
         type: Number,
+        default:0,
       },
       sgst: {
         type: Number,
+        default:0,
       },
     },
     status: {

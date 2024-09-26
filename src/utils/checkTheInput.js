@@ -5,7 +5,7 @@ exports.checkTheInput = (req, res, next) => {
   try {
     const { body } = req;
     for (const key in body) {
-      if (body[key] === "") {
+      if (body[key] === "" && key !== "notes") {
         return res.status(400).json({
           status: "error",
           message: `Please fill in the ${key} field`,
@@ -146,16 +146,16 @@ exports.checkTheInput = (req, res, next) => {
               message: `Please enter valid totalPrice`,
             });
       }
-      if (key == "items") {
-        if (!Array.isArray(body[key]) || body[key].length == 0) {
-          return res.status(400).json({
-            status: "error",
-            message: "Please add a product ",
-          });
-        }
-      }
+      // if (key == "items") {
+      //   if (!Array.isArray(body[key]) || body[key].length == 0) {
+      //     return res.status(400).json({
+      //       status: "error",
+      //       message: "Please add a product ",
+      //     });
+      //   }
+      // }
 
-      if (key == "cusId") {
+      if (key == "cusId") {    
         if (!Array.isArray(body[key]) || body[key].length == 0) {
           return res.status(400).json({
             status: "error",

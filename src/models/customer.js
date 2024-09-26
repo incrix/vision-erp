@@ -130,7 +130,7 @@ const schema = mongoose.Schema(
         ],
         status: {
           type: String,
-          enum: ["pending", "partially", "paid"],
+          enum: ["pending", "partially", "paid","cancelled"],
         },
         closingBalance: {
           type: Number,

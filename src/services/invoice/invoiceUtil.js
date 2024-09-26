@@ -27,6 +27,8 @@ exports.customAmountCondition = ({ id, amount, paymentList, idList }) => {
   );
 };
 exports.getAmountStatus = ({ totalPrice, paidAmount }) => {
+
+  
   if (totalPrice == paidAmount) {
     return "paid";
   } else if (paidAmount > 0) {

@@ -73,12 +73,33 @@ module.exports = ({ passport, services, log }) => {
     }
   });
   router.post("/productCountForInvoice", async (req, res) => {
-    
-    await services.product.isCallProductQuantity({
-      req,
-      res,
-    });
+    try {
+      await services.product.isCallProductQuantity({
+        req,
+        res,
+      });
+    } catch (error) {
+      return res.status(404).json({status:'error', message: error.message});
+    }
+ 
   });
+
+  router.post("/add-timeline", async (req, res) => {
+    try {
+      await services.product.productTimeLine({
+        req,
+        services,
+        callback:function(err,data){ 
+          if(err) return res.json(err);       
+          res.json(data);
+      }}
+      );
+    } catch (error) {
+      return res.status(404).json({status:'error', message: error.message});
+    }
+ 
+  });
+
   router.post("/product-active", async (req, res) => {
     try {
       req.body.req = req;
