@@ -83,7 +83,22 @@ module.exports = ({ passport, services, log }) => {
     }
  
   });
-
+  router.post("/edit-documents-add-product", async (req, res) => {
+    try {
+      await services.product.productTimeLine({
+        req,
+        services,
+        callback:function(err,data){ 
+          if(err) return res.json(err);       
+          res.json(data);
+      }}
+      );
+    } catch (error) {
+      return res.status(404).json({status:'error', message: error.message});
+    }
+ 
+  });
+ 
   router.post("/add-timeline", async (req, res) => {
     try {
       await services.product.productTimeLine({

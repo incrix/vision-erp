@@ -85,13 +85,25 @@ module.exports = class cancelInvoice {
       req.session.payAmount = 0;
       getInvoice.paymentTransactions = [];
 
+      const getData = await services.product.encryptData({
+        items: getInvoice.items,
+        docId: [getInvoice.id],
+        date: getInvoice.date,
+        type: "cancelInvoice",
+      });
+      if (getData.status == "error") return callBack(null, getData);
+
       // change status to "cancelled"
       getInvoice.status = "cancelled";
 
       await getInvoice.save();
 
       return callBack(
-        { status: "success", message: "invoice cancelled successfully" },
+        {
+          status: "success",
+          message: "invoice cancelled successfully",
+          data: getData.data,
+        },
         false
       );
     } catch (error) {
@@ -121,10 +133,10 @@ module.exports = class cancelInvoice {
           message:
             "You can't cancel Invoice with Payment if it has not single payment amount ",
         });
-        let getClient
+      let getClient;
       const getPromise = await new Promise((resolve, reject) => {
         (async () => {
-           getClient = await Customer.findOne({
+          getClient = await Customer.findOne({
             _id: getInvoice.customerDetails.cusID,
           });
           if (!getClient)
@@ -132,33 +144,49 @@ module.exports = class cancelInvoice {
           for (let i = 0; i < getPayments.length; i++) {
             await services.invoice.cancelPaymentWithInvoice({
               req,
-              getPayment:getPayments[i],
+              getPayment: getPayments[i],
               getClient,
-              getInvoices:[getInvoice],
+              getInvoices: [getInvoice],
               reject,
             });
           }
-          resolve({status: 'success',message:"Invoice cancelled successfully"})
+          resolve({
+            status: "success",
+            message: "Invoice cancelled successfully",
+          });
         })();
       });
 
-      getClient.balance.currentBalance -=  (getInvoice.totalPrice - totalPayAmount)
-      getClient.ledger[getClient.ledger.length - 1].closingBalance = getClient.balance.currentBalance
+      getClient.balance.currentBalance -=
+        getInvoice.totalPrice - totalPayAmount;
+      getClient.ledger[getClient.ledger.length - 1].closingBalance =
+        getClient.balance.currentBalance;
 
-      for(let i = 0; i < getPayments.length; i++) {
-        await getPayments[i].save()   
+      const getData = await services.product.encryptData({
+        items: getInvoice.items,
+        docId: [getInvoice.id],
+        date: getInvoice.date,
+        type: "cancelInvoice",
+      });
+      if (getData.status == "error") return callBack(null, getData);
+      for (let i = 0; i < getPayments.length; i++) {
+        await getPayments[i].save();
       }
+
       await getClient.save();
       await getInvoice.save();
 
       if (getPromise.status == "error") return callBack(null, getPromise);
       return callBack(
-        { status: "success", message: "Invoice cancelled successfully" },
+        {
+          status: "success",
+          message: "Invoice cancelled successfully",
+          data: getData.data,
+        },
         false
       );
     } catch (error) {
       return callBack(null, { status: "error", message: error.message });
     }
   }
-  
 };

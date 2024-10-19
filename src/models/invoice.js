@@ -75,6 +75,7 @@ const schema = mongoose.Schema(
     },
     items: [
       {
+        _id:false,
         name: {
           type: String,
           required: true,

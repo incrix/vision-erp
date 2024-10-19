@@ -123,7 +123,7 @@ const schema = mongoose.Schema(
               type: Number,           
             },
             payAmount: {
-              type: String,
+              type: Number,
             },
             
           },

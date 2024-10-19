@@ -65,16 +65,7 @@ await services.invoice.paymentThroughCurrentBalance({req,body:req.body,callBack:
 }})
     })
 
-    router.post("/edit-invoice",async(req,res) =>{
-      try {
-        await services.invoice.editInvoice({req,services,callBack:function(err,data){ 
-         if(err) return res.json(err);       
-         res.json(data);
-     }})
-     } catch (error) {
-      res.json({status: 'error', error: error.message});
-}
-})
+
 router.get("/get-invoice",async(req,res) =>{
   try {
     
@@ -87,7 +78,16 @@ router.get("/get-invoice",async(req,res) =>{
 }
 })
 
-
+router.post("/edit-invoice",async(req,res) =>{
+  try {    
+    await services.invoice.editInvoice({req,services,callback:function(err,data){ 
+     if(err) return res.json(err);       
+     res.json(data);
+ }})
+ } catch (error) {
+  res.json({status: 'error', error: error.message});
+}
+})
 
   return router;
 };

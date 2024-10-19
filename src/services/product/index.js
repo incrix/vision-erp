@@ -153,81 +153,81 @@ module.exports = class Product extends (
   }
 
   // Decrease and Increase The Product Count
-  async productDecreaseOrIncrease({ callBack, clientCount, list, req }) {
-    try {
-      if (list.length == 0)
-        return callBack(null, {
-          status: "error",
-          message: "Something wrong at Product",
-        });
-      const productList = await product.find({
-        userId: req.session.userId,
-        orgId: req.session.orgId,
-      });
-      if (!productList)
-        return callBack(null, {
-          status: "error",
-          message: "Something went wrong at Product getting",
-        });
-      if (productList.length < 0)
-        return callBack(null, {
-          status: "error",
-          message: "You don't have Product",
-        });
-      for (let i = 0; i < list.length; i++) {
-        const productCheck = productList[list[i].productIndex];
-        if (productCheck !== undefined)
-          if (
-            productCheck.productId == list[i].productId &&
-            productCheck.name == list[i].name
-          ) {
-            const getWait = await new Promise((resolve, reject) => {
-              (async () => {
-                return await addQuantityThroughIndex({
-                  productList,
-                  index: i,
-                  clientCount,
-                  type: req.body.type,
-                  list,
-                  resolve,
-                  reject,
-                });
-              })();
-            });
-            if (getWait.status == "error") return callBack(null, getWait);
-          } else {
-            const getWait = await new Promise((resolve, reject) => {
-              (async () => {
-                return await addQuantityThroughLoop({
-                  productList,
-                  index: i,
-                  list,
-                  clientCount,
-                  type: req.body.type,
-                  resolve,
-                  reject,
-                });
-              })();
-            });
-            if (getWait.status == "error") return callBack(null, getWait);
-          }
-        else
-          return callBack(null, {
-            status: "error",
-            message: "Something went wrong with the product.",
-          });
-      }
-      return callBack(
-        {
-          status: "success",
-          message: "Successfully added product quantity",
-        },
-        false
-      );
-    } catch (error) {
-      return callBack(null, { status: "error", message: error.message });
-    }
-  }
+  // async productDecreaseOrIncrease({ callBack, clientCount, list, req }) {
+  //   try {
+  //     if (list.length == 0)
+  //       return callBack(null, {
+  //         status: "error",
+  //         message: "Something wrong at Product",
+  //       });
+  //     const productList = await product.find({
+  //       userId: req.session.userId,
+  //       orgId: req.session.orgId,
+  //     });
+  //     if (!productList)
+  //       return callBack(null, {
+  //         status: "error",
+  //         message: "Something went wrong at Product getting",
+  //       });
+  //     if (productList.length < 0)
+  //       return callBack(null, {
+  //         status: "error",
+  //         message: "You don't have Product",
+  //       });
+  //     for (let i = 0; i < list.length; i++) {
+  //       const productCheck = productList[list[i].productIndex];
+  //       if (productCheck !== undefined)
+  //         if (
+  //           productCheck.productId == list[i].productId &&
+  //           productCheck.name == list[i].name
+  //         ) {
+  //           const getWait = await new Promise((resolve, reject) => {
+  //             (async () => {
+  //               return await addQuantityThroughIndex({
+  //                 productList,
+  //                 index: i,
+  //                 clientCount,
+  //                 type: req.body.type,
+  //                 list,
+  //                 resolve,
+  //                 reject,
+  //               });
+  //             })();
+  //           });
+  //           if (getWait.status == "error") return callBack(null, getWait);
+  //         } else {
+  //           const getWait = await new Promise((resolve, reject) => {
+  //             (async () => {
+  //               return await addQuantityThroughLoop({
+  //                 productList,
+  //                 index: i,
+  //                 list,
+  //                 clientCount,
+  //                 type: req.body.type,
+  //                 resolve,
+  //                 reject,
+  //               });
+  //             })();
+  //           });
+  //           if (getWait.status == "error") return callBack(null, getWait);
+  //         }
+  //       else
+  //         return callBack(null, {
+  //           status: "error",
+  //           message: "Something went wrong with the product.",
+  //         });
+  //     }
+  //     return callBack(
+  //       {
+  //         status: "success",
+  //         message: "Successfully added product quantity",
+  //       },
+  //       false
+  //     );
+  //   } catch (error) {
+  //     return callBack(null, { status: "error", message: error.message });
+  //   }
+  // }
   //Get All Product
   async getAllProducts({ req }) {
     try {

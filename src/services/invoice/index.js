@@ -75,7 +75,7 @@ module.exports = class Invoice extends (
         }
         getData = await services.product.encryptData({
           items: body.items,
-          invoiceId,
+          docId: [invoiceId],
           date: req.body.date,
           type: "invoice",
         });
@@ -235,69 +235,87 @@ module.exports = class Invoice extends (
               })();
             });
             if (getWaiting.status == "error") return callBack(getWaiting);
-            if (body.paidAmount > 0)
-              return await services.payment
-                .createPayment({
-                  orgId: req.session.orgId,
-                  clientId: getCustomer._id,
-                  name: getCustomer.name,
-                  amount: body.paidAmount,
-                  mode: body.transactionDetails.type,
-                  date: req.body.date,
-                  type: "in",
-                  whose: "customer",
-                  documents: [
-                    {
-                      type: "erp",
-                      id: getInvoiceResult.id,
-                      payAmount: body.paidAmount,
-                      docAmount: body.totalPrice,
-                    },
-                  ],
-                })
-                .then(async (getPayResult) => {
-                  if (getPayResult.status == "error")
-                    return reject(getPayResult);
-                  new Promise((resolve, reject) => {
-                    (async () => {
-                      getCustomer.ledger[
-                        getCustomer.ledger.length - 1
-                      ].documents.push({
-                        id: getPayResult.paymentId,
-                        amount: getPayResult.amount,
-                        payAmount: getPayResult.amount,
-                      });
-                      getCustomer = await createClientBalanceForPayment({
-                        paidAmount: body.paidAmount,
-                        totalAmount: body.totalPrice,
-                        payment: getPayResult,
-                        getCustomer,
-                        invoice: getInvoiceResult,
-                      });
+            if (body.paidAmount > 0) {
+              const getPromise = await new Promise((resolve, reject) => {
+                (async () => {
+                  await services.invoice.createPaymentInvoice({
+                    ...req,
+                    req,
+                    whose: "customer",
+                    getClient: getCustomer,
+                    resolve,
+                    reject,
+                    invoice: getInvoiceResult,
+                    services,
+                  });
+                })();
+              });
+              if (getPromise.status == "error") return callBack(getPromise);
+              await getCustomer.save();
+              await getInvoiceResult.save();
+            }
+            // return await services.payment
+            //   .createPayment({
+            //     orgId: req.session.orgId,
+            //     clientId: getCustomer._id,
+            //     name: getCustomer.name,
+            //     amount: body.paidAmount,
+            //     mode: body.transactionDetails.type,
+            //     date: req.body.date,
+            //     type: "in",
+            //     whose: "customer",
+            //     documents: [
+            //       {
+            //         type: "erp",
+            //         id: getInvoiceResult.id,
+            //         payAmount: body.paidAmount,
+            //         docAmount: body.totalPrice,
+            //       },
+            //     ],
+            //   })
+            //   .then(async (getPayResult) => {
+            //     if (getPayResult.status == "error")
+            //       return reject(getPayResult);
+            //     new Promise((resolve, reject) => {
+            //       (async () => {
+                    // getCustomer.ledger[
+                    //   getCustomer.ledger.length - 1
+                    // ].documents.push({
+                    //   id: getPayResult.paymentId,
+                    //   amount: getPayResult.amount,
+                    //   payAmount: getPayResult.amount,
+                    // });
+            //         getCustomer = await createClientBalanceForPayment({
+            //           paidAmount: body.paidAmount,
+            //           totalAmount: body.totalPrice,
+            //           payment: getPayResult,
+            //           getCustomer,
+            //           invoice: getInvoiceResult,
+            //         });
 
-                      await getCustomer.save();
-                    })();
-                  });
+            //         await getCustomer.save();
+            //       })();
+            //     });
 
-                  // add payment details in invoice  and save them
-                  getInvoiceResult.paymentTransactions.push({
-                    type: "payment",
-                    id: getPayResult.paymentId,
-                    amount: getPayResult.amount,
-                  });
-                  await getInvoiceResult.save();
-                  resolve({
-                    status: "success",
-                    message: "Invoice Created Successfully",
-                  });
-                })
-                .catch((err) => {
-                  console.log(err);
-                  callBack(null, {
-                    status: "error",
-                    message: "Getting Error When Create Invoice",
-                  });
-                });
+            //     // add payment details in invoice  and save them
+            //     getInvoiceResult.paymentTransactions.push({
+            //       type: "payment",
+            //       id: getPayResult.paymentId,
+            //       amount: getPayResult.amount,
+            //     });
+            //     await getInvoiceResult.save();
+            //     resolve({
+            //       status: "success",
+            //       message: "Invoice Created Successfully",
+            //     });
+            //   })
+            //   .catch((err) => {
+            //     console.log(err);
+            //     callBack(null, {
+            //       status: "error",
+            //       message: "Getting Error When Create Invoice",
+            //     });
+            //   })
             else {
               await getCustomer.save();
             }
@@ -653,34 +671,153 @@ module.exports = class Invoice extends (
     }
   }
   // this function is for editing invoice details
-  async editInvoice({ callBack, req }) {
+  async editInvoice({ services, callback, req }) {
     try {
       const body = req.body;
+      if (!body.id)
+        return callback(null, {
+          status: "error",
+          message: "we must need a invoice id",
+        });
+      if (body.editInvoicePayment) {
+        if (typeof body.editInvoicePayment.amount !== "number")
+          return callback(null, {
+            status: "error",
+            message: "amount must be a number ",
+          });
+        if (typeof body.editInvoicePayment.type !== "string")
+          return callback(null, {
+            status: "error",
+            message: "amount must be a string",
+          });
+
+        if (
+          ![
+            ...process.env.PAYMENT_TYPE.split(",").map((getPaymentType) => {
+              return getPaymentType.trim();
+            }),
+          ].includes(body.editInvoicePayment.type)
+        )
+          return callback(null, {
+            status: "error",
+            message: "Please enter a valid Payment type",
+          });
+      }
       const getInvoice = await invoice.findOne({ id: body.id });
       if (!getInvoice)
-        return callBack(null, {
+        return callback(null, {
           status: "error",
           message: "Invoice not found",
+        });
+      if (getInvoice.status === "cancelled")
+        return callback(null, {
+          status: "error",
+          message: "You can't edit the Invoice when it was cancelled",
         });
       const getCustomer = await Customer.findOne({
         _id: getInvoice.customerDetails.cusID,
       });
       if (!getCustomer)
-        return callBack(null, {
+        return callback(null, {
           status: "error",
           message: "Customer not found",
         });
-      if (body.editTotal < getInvoice.paidAmount)
-        return callBack(null, {
+      if (body.totalPrice < getInvoice.paidAmount)
+        return callback(null, {
           status: "error",
-          message: "You cant pay the amount",
+          message: "You can't reduce totalPrice less than paid amount",
+        });
+      if (
+        body.totalPrice <
+        getInvoice.paidAmount + body.editInvoicePayment.amount
+      )
+        return callback(null, {
+          status: "error",
+          message: "You can't pay Paid amount more than totalPrice ",
         });
 
-      return callBack({ status: "success", data: getInvoice }, false);
+      const getItems = await services.product.decryptData(body.items);
+      if (getItems.status == "error") callback(null, getItems);
+      const oldItems = getInvoice.items
+      getInvoice.items = getItems.data;
+      getInvoice.date = body.date;
+      getInvoice.dueDate = body.dueDate;
+     
+      getInvoice.discount = body.discount;
+      getInvoice.tax = body.tax;
+      if (getInvoice.totalPrice !== body.totalPrice) {
+        // need to cancel previous total amount in balance list
+        getCustomer.balance.currentBalance =
+          getCustomer.balance.currentBalance - getInvoice.totalPrice;
+      
+        // then add edit total amount to balance list
+        getCustomer.balance.currentBalance =
+          getCustomer.balance.currentBalance + body.totalPrice;
+     
+        getCustomer.ledger[getCustomer.ledger.length - 1].closingBalance =
+          getCustomer.balance.currentBalance;
+      }
+      // add edit total amount to invoice total amount
+      getInvoice.totalPrice = body.totalPrice;
+      if (body.editInvoicePayment.amount > 0) {
+        const getPromise = await new Promise((resolve, reject) => {
+          (async () => {
+            body.transactionDetails = { type: body.editInvoicePayment.type };
+            // add previous paid amount and edit paid amount to invoice paid amount
+            getInvoice.paidAmount =
+              getInvoice.paidAmount + body.editInvoicePayment.amount;
+            // we need to add edit paidAmount to body paid amount
+            body.paidAmount = body.editInvoicePayment.amount;
+            // update the invoice status
+            getInvoice.status = await getAmountStatus({
+              totalPrice: body.totalPrice,
+              paidAmount: getInvoice.paidAmount,
+            });
+            await services.invoice.createPaymentInvoice({
+              body,
+              req,
+              whose: "customer",
+              getClient: getCustomer,
+              resolve,
+              reject,
+              invoice: getInvoice,
+              services,
+            });
+          })();
+        });
+        if (getPromise.status == "error") return callback(getPromise);
+      }
+      else {
+        // We need to check the status of the invoice; either payment was zero.
+        getInvoice.status = await getAmountStatus({
+          totalPrice: body.totalPrice,
+          paidAmount: getInvoice.paidAmount,
+        });
+      }
+      const getData = await services.product.encryptData({
+        items: getInvoice.items,
+        docId: [getInvoice.id],
+        date: req.body.date,
+        type: "editInvoice",
+        oldItems,
+      });
+      if (getData.status == "error") return callback(getData);
+
+      await getCustomer.save();
+      await getInvoice.save();
+
+      return callback(
+        {
+          status: "success",
+          message: "Edit Invoice Successfully",
+          data: getData.data,
+        },
+        false
+      );
     } catch (error) {
-      return callBack(null, {
+      return callback(null, {
         status: "error",
-        message: `something went wrong when trying to edit invoice`,
+        message: `Something went wrong when trying to edit invoice`,
       });
     }
   }

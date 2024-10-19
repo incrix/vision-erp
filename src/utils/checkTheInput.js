@@ -1,6 +1,14 @@
 const validator = require("email-validator");
 const { isValidDateFormat } = require("./checkDateFormat");
 
+const getValidDataType = (type) =>{
+ return [
+    ...process.env.PAYMENT_TYPE.split(",").map((getPaymentType) => {
+      return getPaymentType.trim();
+    }),
+  ].includes(type)
+}
+
 exports.checkTheInput = (req, res, next) => {
   try {
     const { body } = req;
@@ -131,7 +139,7 @@ exports.checkTheInput = (req, res, next) => {
             });
           if (
             body[key].type == "" ||
-            !process.env.PAYMENT_TYPE.includes(body[key].type)
+            !getValidDataType(body[key].type)
           )
             return res.status(400).json({
               status: "error",
